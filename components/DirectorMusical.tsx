@@ -30,7 +30,7 @@ const INDEX_TIP = 8;
 const PINCH_THRESHOLD = 0.06;
 // Cambia a true para reactivar la detección de manos y el audio.
 // En false: solo se muestra la cámara, sin procesar gestos.
-const HABILITAR_DETECCION_MANOS = false;
+const HABILITAR_DETECCION_MANOS = true;
 type Point = { x: number; y: number; z: number };
 
 function distance(a: Point, b: Point) {
@@ -156,7 +156,7 @@ export default function DirectorMusical() {
     setStatus("loading");
     setErrorMsg("");
     try {
-      /*if (HABILITAR_DETECCION_MANOS) {
+      if (HABILITAR_DETECCION_MANOS) {
         // 1) Cargar MediaPipe Hands. Todo corre localmente en el navegador
         // (WASM + modelo), sin enviar video a ningún servidor.
         const { HandLandmarker, FilesetResolver } = await import(
@@ -187,7 +187,7 @@ export default function DirectorMusical() {
         }).connect(volume);
         synthRef.current = synth;
         volumeRef.current = volume;
-      }*/
+      }
 
       // 3) Pedir la cámara (esto siempre corre, con o sin detección).
       const stream = await navigator.mediaDevices.getUserMedia({
