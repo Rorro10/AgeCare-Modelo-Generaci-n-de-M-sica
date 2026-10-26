@@ -3,14 +3,22 @@
 // La caja es siempre la misma (mismo tamaño y lugar): solo cambia su
 // contenido, así nada salta de sitio entre estados.
 
+import type { RefObject } from "react";
 import { NOTE_TEXT_COLOR, noteColor, noteLabel } from "@/lib/director/noteDisplay";
 import type { Stage } from "@/lib/director/viewModel";
 import { Icon } from "./Icon";
 
-export function NoteStage({ stage }: { stage: Stage }) {
+type Props = {
+  stage: Stage;
+  // El hook anima el pulso sobre esta caja al tocar una nota.
+  cardRef: RefObject<HTMLElement | null>;
+};
+
+export function NoteStage({ stage, cardRef }: Props) {
   const isNote = stage.kind === "note";
   return (
     <section
+      ref={cardRef}
       aria-label="Nota actual"
       className={`relative flex min-h-36 items-center justify-center overflow-hidden rounded-3xl px-4 py-4 text-center sm:min-h-44 ${
         isNote ? "" : "border-2 border-band bg-surface"
@@ -21,12 +29,14 @@ export function NoteStage({ stage }: { stage: Stage }) {
           : undefined
       }
     >
+      {/* Capa del destello al tocar (opacidad 0 en reposo). */}
+      <span data-flash aria-hidden="true" className="pointer-events-none absolute inset-0 bg-white opacity-0" />
       {isNote ? (
-        <p className="text-[3.75rem] leading-none font-bold tracking-[-0.02em] [overflow-wrap:anywhere] sm:text-[6rem]">
+        <p className="relative text-[3.75rem] leading-none font-bold tracking-[-0.02em] [overflow-wrap:anywhere] sm:text-[6rem]">
           {noteLabel(stage.noteIndex)}
         </p>
       ) : (
-        <p className="flex flex-col items-center gap-2 text-[1.75rem] leading-tight font-bold sm:text-[2.25rem]">
+        <p className="relative flex flex-col items-center gap-2 text-[1.75rem] leading-tight font-bold sm:text-[2.25rem]">
           <Icon
             name={stage.icon}
             className={`text-[2.5rem] sm:text-[3rem] ${

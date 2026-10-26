@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { INDEX_TIP, PENTATONIC_SCALE, THUMB_TIP, VOLUME_STEPS, WRIST } from "./domain";
 import { distance, pinchDistance, yToHeight } from "./gestureMapper";
+import { shouldShowHandGuide } from "./handPresence";
 import { NoteStabilizer } from "./noteStabilizer";
 import { createAudioEngine, type AudioEngine } from "./services/audioEngine";
 import {
@@ -15,6 +16,7 @@ import {
   startCameraStream,
   stopCameraStream,
 } from "./services/camera";
+import { pulseNote } from "./services/feedback";
 import { createHandTracker, type HandTracker } from "./services/handTracker";
 import { drawHands } from "./services/landmarkRenderer";
 import { describeView, type DirectorStatus } from "./viewModel";
@@ -27,6 +29,13 @@ const HABILITAR_DETECCION_MANOS = true;
 export function useDirectorMusical() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Tarjeta de la nota y lista de franjas: el pulso al tocar se anima
+  // directo sobre ellas, en el mismo cuadro que suena la nota.
+  const noteCardRef = useRef<HTMLElement>(null);
+  const bandsRef = useRef<HTMLUListElement>(null);
+  // Último instante (ms) en que se vio una mano; null = ninguna desde que
+  // empezó o se reanudó.
+  const lastHandSeenAtRef = useRef<number | null>(null);
   const handTrackerRef = useRef<HandTracker | null>(null);
   const audioRef = useRef<AudioEngine | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -37,7 +46,7 @@ export function useDirectorMusical() {
   const [status, setStatus] = useState<DirectorStatus>("idle");
   const [resuming, setResuming] = useState(false);
   const [noteIndex, setNoteIndex] = useState<number | null>(null);
-  const [handVisible, setHandVisible] = useState(false);
+  const [showHandGuide, setShowHandGuide] = useState(true);
   const [volumeStep, setVolumeStep] = useState(volume.step);
 
   // Se usan funciones normales (no useCallback) porque no necesitamos
@@ -72,7 +81,8 @@ export function useDirectorMusical() {
       // reloj externo con performance.now().
       const now = performance.now();
       const hands = handTracker.detect(video, now);
-      setHandVisible(hands.length > 0);
+      if (hands.length > 0) lastHandSeenAtRef.current = now;
+      setShowHandGuide(shouldShowHandGuide(lastHandSeenAtRef.current, now));
 
       if (hands.length > 0) {
         // Mano principal: controla la nota (altura del índice) y el gesto
@@ -88,7 +98,10 @@ export function useDirectorMusical() {
         );
         if (noteIndex !== null) {
           setNoteIndex(noteIndex);
-          if (shouldTrigger) audio?.playNote(PENTATONIC_SCALE[noteIndex]);
+          if (shouldTrigger) {
+            audio?.playNote(PENTATONIC_SCALE[noteIndex]);
+            pulseNote(noteCardRef.current, bandsRef.current, noteIndex);
+          }
         }
         drawHands(ctx, hands, isPinching);
       } else {
@@ -134,7 +147,8 @@ export function useDirectorMusical() {
       await startCameraStream(videoRef.current);
 
       setNoteIndex(null);
-      setHandVisible(false);
+      lastHandSeenAtRef.current = null;
+      setShowHandGuide(true);
       setStatus("running");
       if (HABILITAR_DETECCION_MANOS) {
         renderLoop();
@@ -177,7 +191,7 @@ export function useDirectorMusical() {
     status,
     resuming,
     noteIndex,
-    showHandGuide: !handVisible,
+    showHandGuide,
   });
 
   const actions = { start, resume: start, pause, none: () => {} };
@@ -185,6 +199,8 @@ export function useDirectorMusical() {
   return {
     videoRef,
     canvasRef,
+    noteCardRef,
+    bandsRef,
     view,
     // Franja iluminada: solo mientras se está mostrando una nota.
     activeBand: view.stage.kind === "note" ? view.stage.noteIndex : null,

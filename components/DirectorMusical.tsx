@@ -11,8 +11,16 @@ import { NoteBands } from "./director/NoteBands";
 import { NoteStage } from "./director/NoteStage";
 
 export default function DirectorMusical() {
-  const { videoRef, canvasRef, view, activeBand, onPrimary, volume } =
-    useDirectorMusical();
+  const {
+    videoRef,
+    canvasRef,
+    noteCardRef,
+    bandsRef,
+    view,
+    activeBand,
+    onPrimary,
+    volume,
+  } = useDirectorMusical();
 
   return (
     <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 sm:gap-6">
@@ -22,11 +30,11 @@ export default function DirectorMusical() {
         <h1 className="text-2xl font-bold">Director Musical</h1>
       </header>
 
-      <NoteStage stage={view.stage} />
+      <NoteStage stage={view.stage} cardRef={noteCardRef} />
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
         <CameraView videoRef={videoRef} canvasRef={canvasRef} notice={view.cameraNotice} />
-        <NoteBands activeBand={activeBand} />
+        <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
       </div>
 
       {/* Única región aria-live: mensajes de estado, nunca cada nota. */}

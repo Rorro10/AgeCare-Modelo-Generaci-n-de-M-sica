@@ -12,6 +12,10 @@ export type AudioEngine = {
 export async function createAudioEngine(): Promise<AudioEngine> {
   const Tone = await import("tone");
   await Tone.start();
+  // Tone programa los sonidos con 0.1 s de anticipación por defecto: la nota
+  // sonaría ~100 ms después del pulso visual. En 0 suena en cuanto se pide,
+  // en el mismo cuadro que la animación.
+  Tone.getContext().lookAhead = 0;
   const volume = new Tone.Volume(-8).toDestination();
   const synth = new Tone.Synth({
     oscillator: { type: "sine" },
