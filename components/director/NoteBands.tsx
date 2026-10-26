@@ -20,7 +20,7 @@ export function NoteBands({ activeBand, bandsRef }: Props) {
     <ul
       ref={bandsRef}
       aria-label="Altura de tu mano"
-      className="flex w-[4.75rem] shrink-0 flex-col gap-0.5 sm:w-28"
+      className="flex h-full w-full flex-col gap-0.5"
     >
       {TOP_TO_BOTTOM.map((index) => {
         const active = index === activeBand;
@@ -30,7 +30,7 @@ export function NoteBands({ activeBand, bandsRef }: Props) {
             key={index}
             data-band={index}
             aria-current={active ? "true" : undefined}
-            className={`relative flex min-h-0 flex-1 overflow-hidden items-center gap-1 rounded-md border-l-[0.375rem] px-2 text-lg leading-none font-semibold ${
+            className={`relative flex min-h-0 flex-1 overflow-hidden items-center gap-1 rounded-md border-l-[0.375rem] px-1.5 text-base leading-none font-semibold max-[22.5rem]:text-sm sm:px-2 sm:text-lg ${
               active ? "" : "bg-band text-band-foreground"
             }`}
             style={
@@ -40,7 +40,8 @@ export function NoteBands({ activeBand, bandsRef }: Props) {
             }
           >
             <span data-flash aria-hidden="true" className="pointer-events-none absolute inset-0 bg-white opacity-0" />
-            {active && <span aria-hidden="true" className="relative">◀</span>}
+            {/* En franjas angostas (celular) no cabe: basta el relleno de color. */}
+            {active && <span aria-hidden="true" className="relative hidden sm:inline">◀</span>}
             <span className="relative">{noteName(index)}</span>
           </li>
         );

@@ -13,6 +13,10 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* Pantallas bajas (p. ej. portátil de 1366×650 útiles): se compacta la vista
+   para que la nota, la cámara y el botón Pausar quepan sin scroll. */
+@custom-variant short (@media (max-height: 720px));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

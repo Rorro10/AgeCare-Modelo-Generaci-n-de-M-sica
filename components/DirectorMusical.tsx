@@ -16,6 +16,7 @@ export default function DirectorMusical() {
     canvasRef,
     noteCardRef,
     bandsRef,
+    videoAspect,
     view,
     activeBand,
     onPrimary,
@@ -23,22 +24,28 @@ export default function DirectorMusical() {
   } = useDirectorMusical();
 
   return (
-    <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 sm:gap-6">
+    // En pantallas bajas (short) todo lo que no es la cámara suma ≤ 23rem:
+    // la caja de la cámara toma el resto del alto (ver CameraView).
+    <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 short:gap-3 short:py-3 sm:gap-6 sm:short:gap-3">
       <header className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/agecare-logo.jpg" alt="AgeCare" className="h-12 w-auto object-contain" />
-        <h1 className="text-2xl font-bold">Director Musical</h1>
+        <img src="/agecare-logo.jpg" alt="AgeCare" className="h-12 w-auto object-contain short:h-8" />
+        <h1 className="text-2xl font-bold short:text-xl">Director Musical</h1>
       </header>
 
       <NoteStage stage={view.stage} cardRef={noteCardRef} />
 
-      <div className="flex justify-center gap-3">
-        <CameraView videoRef={videoRef} canvasRef={canvasRef} notice={view.cameraNotice} />
+      <CameraView
+        videoRef={videoRef}
+        canvasRef={canvasRef}
+        notice={view.cameraNotice}
+        videoAspect={videoAspect}
+      >
         <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
-      </div>
+      </CameraView>
 
       {/* Única región aria-live: mensajes de estado, nunca cada nota. */}
-      <p role="status" aria-live="polite" className="text-center text-xl font-medium">
+      <p role="status" aria-live="polite" className="text-center text-xl font-medium short:text-lg">
         {view.message}
       </p>
 

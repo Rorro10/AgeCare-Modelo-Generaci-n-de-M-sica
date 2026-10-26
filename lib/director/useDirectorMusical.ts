@@ -48,6 +48,10 @@ export function useDirectorMusical() {
   const [noteIndex, setNoteIndex] = useState<number | null>(null);
   const [showHandGuide, setShowHandGuide] = useState(true);
   const [volumeStep, setVolumeStep] = useState(volume.step);
+  // Proporción ancho/alto del stream. Pedimos 640×480, pero en celular
+  // vertical el navegador suele entregarlo girado (3:4); la vista la usa para
+  // mostrar la imagen completa y alinear las franjas con ella.
+  const [videoAspect, setVideoAspect] = useState(4 / 3);
 
   // Se usan funciones normales (no useCallback) porque no necesitamos
   // identidad estable entre renders: solo leen/escriben refs y estado.
@@ -179,7 +183,16 @@ export function useDirectorMusical() {
 
   useEffect(() => {
     const videoEl = videoRef.current;
+    // "resize" se dispara cuando cambian videoWidth/videoHeight: al llegar
+    // el primer cuadro y al girar el celular.
+    function updateAspect() {
+      if (videoEl?.videoWidth && videoEl.videoHeight) {
+        setVideoAspect(videoEl.videoWidth / videoEl.videoHeight);
+      }
+    }
+    videoEl?.addEventListener("resize", updateAspect);
     return () => {
+      videoEl?.removeEventListener("resize", updateAspect);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       stopCameraStream(videoEl);
       handTrackerRef.current?.close();
@@ -201,6 +214,7 @@ export function useDirectorMusical() {
     canvasRef,
     noteCardRef,
     bandsRef,
+    videoAspect,
     view,
     // Franja iluminada: solo mientras se está mostrando una nota.
     activeBand: view.stage.kind === "note" ? view.stage.noteIndex : null,

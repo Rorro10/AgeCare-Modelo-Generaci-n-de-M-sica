@@ -15,7 +15,8 @@ import { VOLUME_STEPS } from "@/lib/director/domain";
 import { pulseNote } from "@/lib/director/services/feedback";
 import { describeView, type DirectorState } from "@/lib/director/viewModel";
 
-type Fixture = { state: DirectorState; volumeStep: number };
+// videoAspect: proporción del stream (4:3 por defecto; 3:4 = celular vertical).
+type Fixture = { state: DirectorState; volumeStep: number; videoAspect?: number };
 
 const running = (noteIndex: number | null, showHandGuide = false): DirectorState => ({
   status: "running",
@@ -34,11 +35,13 @@ const FIXTURES: Record<string, Fixture> = {
   "do-agudo": { state: running(5), volumeStep: 5 },
   "nota-grave": { state: running(0), volumeStep: 1 },
   "nota-aguda": { state: running(9), volumeStep: 4 },
+  "sol-agudo": { state: running(8), volumeStep: 3 },
+  "camara-vertical": { state: running(7), volumeStep: 3, videoAspect: 3 / 4 },
   pausa: { state: { status: "paused", resuming: false, noteIndex: 3, showHandGuide: false }, volumeStep: 3 },
   error: { state: { status: "error", resuming: false, noteIndex: null, showHandGuide: true }, volumeStep: 3 },
 };
 
-export function StatePreview({ estado }: { estado: string }) {
+export function StatePreview({ estado, showSelector }: { estado: string; showSelector: boolean }) {
   const fixture = FIXTURES[estado] ?? FIXTURES.nota;
   const view = describeView(fixture.state);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -50,18 +53,24 @@ export function StatePreview({ estado }: { estado: string }) {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 pb-28 sm:gap-6">
+      {/* Mismas clases que components/DirectorMusical.tsx. Sin padding extra
+          abajo: el selector de estados queda encima, como en uso real. */}
+      <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 short:gap-3 short:py-3 sm:gap-6 sm:short:gap-3">
         <header className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/agecare-logo.jpg" alt="AgeCare" className="h-12 w-auto object-contain" />
-          <h1 className="text-2xl font-bold">Director Musical</h1>
+          <img src="/agecare-logo.jpg" alt="AgeCare" className="h-12 w-auto object-contain short:h-8" />
+          <h1 className="text-2xl font-bold short:text-xl">Director Musical</h1>
         </header>
         <NoteStage stage={view.stage} cardRef={noteCardRef} />
-        <div className="flex justify-center gap-3">
-          <CameraView videoRef={videoRef} canvasRef={canvasRef} notice={view.cameraNotice} />
+        <CameraView
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          notice={view.cameraNotice}
+          videoAspect={fixture.videoAspect ?? 4 / 3}
+        >
           <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
-        </div>
-        <p role="status" aria-live="polite" className="text-center text-xl font-medium">
+        </CameraView>
+        <p role="status" aria-live="polite" className="text-center text-xl font-medium short:text-lg">
           {view.message}
         </p>
         <Controls
@@ -83,6 +92,7 @@ export function StatePreview({ estado }: { estado: string }) {
       </main>
 
       {/* Selector de estado: herramienta de desarrollo, no es parte del diseño. */}
+      {showSelector && (
       <nav
         aria-label="Estados de prueba"
         className="fixed inset-x-0 bottom-3 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap justify-center gap-1 rounded-xl bg-neutral-200 p-1 font-sans text-xs text-neutral-900"
@@ -97,6 +107,7 @@ export function StatePreview({ estado }: { estado: string }) {
           </Link>
         ))}
       </nav>
+      )}
     </>
   );
 }

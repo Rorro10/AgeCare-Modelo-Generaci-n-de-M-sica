@@ -23,7 +23,7 @@ type Props = {
 
 export function Controls({ primary, onPrimary, volume }: Props) {
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4 short:gap-2">
       <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
         <BigButton
           icon={primary.icon}
@@ -52,7 +52,7 @@ export function Controls({ primary, onPrimary, volume }: Props) {
         )}
       </div>
       {volume.visible && (
-        <p className="flex items-center gap-3 text-xl font-semibold">
+        <p className="flex items-center gap-3 text-xl font-semibold short:text-lg">
           <span>Volumen</span>
           <span aria-hidden="true" className="flex items-end gap-1">
             {Array.from({ length: volume.steps }, (_, i) => (
