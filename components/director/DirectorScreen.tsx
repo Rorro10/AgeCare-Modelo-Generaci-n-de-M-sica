@@ -36,11 +36,11 @@ export function DirectorScreen({
   return (
     // min-h: bajo ~34rem de alto (celular apaisado, zoom grande) la página
     // pasa a hacer scroll en vez de aplastar la cámara.
-    <main className="mx-auto flex h-dvh min-h-[34rem] w-full max-w-[48rem] flex-col gap-3 px-3 py-3 sm:gap-4 sm:px-4">
-      <header className="flex shrink-0 items-center justify-center gap-3">
+    <main className="mx-auto flex h-dvh min-h-[34rem] w-full max-w-[48rem] flex-col gap-2 px-3 py-2 sm:gap-4 sm:px-4 sm:py-3">
+      <header className="flex shrink-0 items-center justify-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/agecare-logo.png" alt="AgeCare" className="h-11 w-auto" />
-        <h1 className="text-xl font-bold">Director Musical</h1>
+        <img src="/agecare-logo.png" alt="AgeCare" className="h-9 w-auto sm:h-11" />
+        <h1 className="text-lg font-bold sm:text-xl">Director Musical</h1>
       </header>
 
       <NoteStage stage={view.stage} cardRef={noteCardRef} />

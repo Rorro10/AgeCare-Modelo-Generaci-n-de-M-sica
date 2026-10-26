@@ -1,8 +1,19 @@
 // Servicio de cámara: encender y apagar el stream de video.
 
 export async function startCameraStream(video: HTMLVideoElement) {
+  // En un celular vertical se pide el video también vertical (3:4): un video
+  // horizontal quedaría limitado por el ancho de la pantalla y se vería
+  // chico, aunque sobre alto. "ideal" deja que el navegador use lo más
+  // cercano que tenga. facingMode "user": la cámara frontal, la que mira a
+  // la persona.
+  const portrait = window.innerHeight > window.innerWidth;
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: 640, height: 480 },
+    video: {
+      facingMode: "user",
+      width: { ideal: portrait ? 480 : 640 },
+      height: { ideal: portrait ? 640 : 480 },
+      aspectRatio: { ideal: portrait ? 3 / 4 : 4 / 3 },
+    },
     audio: false,
   });
   video.srcObject = stream;

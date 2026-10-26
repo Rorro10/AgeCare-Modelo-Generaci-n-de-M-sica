@@ -20,7 +20,7 @@ export function NoteStage({ stage, cardRef }: Props) {
     <section
       ref={cardRef}
       aria-label="Nota actual"
-      className={`relative flex min-h-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-3xl px-4 py-3 text-center sm:min-h-28 ${
+      className={`relative flex min-h-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-3xl px-4 py-2 text-center sm:min-h-28 sm:py-3 ${
         isNote ? "" : "border-2 border-band bg-surface"
       }`}
       style={
@@ -32,14 +32,14 @@ export function NoteStage({ stage, cardRef }: Props) {
       {/* Capa del destello al tocar (opacidad 0 en reposo). */}
       <span data-flash aria-hidden="true" className="pointer-events-none absolute inset-0 bg-white opacity-0" />
       {isNote ? (
-        <p className="relative text-[3.5rem] leading-none font-bold tracking-[-0.02em] [overflow-wrap:anywhere] sm:text-[4.5rem]">
+        <p className="relative text-[3rem] leading-none font-bold tracking-[-0.02em] [overflow-wrap:anywhere] sm:text-[4.5rem]">
           {noteLabel(stage.noteIndex)}
         </p>
       ) : (
-        <p className="relative flex items-center gap-3 text-2xl leading-tight font-bold sm:text-3xl">
+        <p className="relative flex items-center gap-3 text-xl leading-tight font-bold sm:text-3xl">
           <Icon
             name={stage.icon}
-            className={`text-[2.25rem] ${stage.icon === "loading" ? "motion-safe:animate-spin" : ""}`}
+            className={`text-[2rem] sm:text-[2.25rem] ${stage.icon === "loading" ? "motion-safe:animate-spin" : ""}`}
           />
           <span>{stage.title}</span>
         </p>
