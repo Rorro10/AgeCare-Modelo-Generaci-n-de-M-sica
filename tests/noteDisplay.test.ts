@@ -18,10 +18,11 @@ describe("noteName / noteLabel", () => {
     ]);
   });
 
-  it("solo el Do de arriba dice «Do agudo» en la nota gigante", () => {
-    expect(noteLabel(0)).toBe("Do");
-    expect(noteLabel(5)).toBe("Do agudo");
-    expect(INDICES.filter((i) => noteLabel(i) !== noteName(i))).toEqual([5]);
+  it("la octava de arriba lleva «agudo» en la nota gigante", () => {
+    expect(INDICES.map(noteLabel)).toEqual([
+      "Do", "Re", "Mi", "Sol", "La",
+      "Do agudo", "Re agudo", "Mi agudo", "Sol agudo", "La agudo",
+    ]);
   });
 });
 

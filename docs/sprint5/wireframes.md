@@ -348,16 +348,18 @@ demasiado seguido.
 ## Nombres de las notas
 
 Las 10 notas de la escala pentatónica (dos octavas) se muestran por su nombre
-en español. El color va por nombre (los dos "Do" comparten color); la franja
-deja ver si es la de abajo (grave) o la de arriba (aguda).
+en español. El color va por nombre (los dos "Do" comparten color). En la nota
+gigante, la octava de arriba se distingue con texto: "Do agudo", "Re agudo",
+etc. En las franjas basta el nombre corto, porque su posición ya dice si es
+grave o aguda.
 
-| Índice | Nota | Nombre | Índice | Nota | Nombre |
+| Índice | Nota | Nota gigante | Índice | Nota | Nota gigante |
 | --- | --- | --- | --- | --- | --- |
-| 0 | C4 | Do | 5 | C5 | Do |
-| 1 | D4 | Re | 6 | D5 | Re |
-| 2 | E4 | Mi | 7 | E5 | Mi |
-| 3 | G4 | Sol | 8 | G5 | Sol |
-| 4 | A4 | La | 9 | A5 | La |
+| 0 | C4 | Do | 5 | C5 | Do agudo |
+| 1 | D4 | Re | 6 | D5 | Re agudo |
+| 2 | E4 | Mi | 7 | E5 | Mi agudo |
+| 3 | G4 | Sol | 8 | G5 | Sol agudo |
+| 4 | A4 | La | 9 | A5 | La agudo |
 
 Los colores exactos y su contraste (≥ 4.5:1) se documentan en la Actividad 51.
 

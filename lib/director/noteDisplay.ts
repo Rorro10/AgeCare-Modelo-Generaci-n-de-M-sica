@@ -32,10 +32,11 @@ export function noteName(index: number): NoteName {
   return NAME_BY_LETTER[PENTATONIC_SCALE[index][0]];
 }
 
-// Nombre para la nota gigante. El Do de la octava de arriba se distingue con
-// texto ("Do agudo"), no con otro color.
+// Nombre para la nota gigante. Las notas de la octava de arriba se distinguen
+// con texto ("Re agudo"), no con otro color.
 export function noteLabel(index: number): string {
-  return PENTATONIC_SCALE[index] === "C5" ? "Do agudo" : noteName(index);
+  const isHighOctave = PENTATONIC_SCALE[index].endsWith("5");
+  return isHighOctave ? `${noteName(index)} agudo` : noteName(index);
 }
 
 export function noteColor(index: number): string {
