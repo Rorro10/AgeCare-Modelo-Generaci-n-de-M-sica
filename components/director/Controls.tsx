@@ -1,11 +1,13 @@
 // Botones grandes (≥ 64 px de alto, ícono + texto, un solo toque) y nivel de
-// volumen. Sin sliders, swipes ni doble clic.
+// volumen. Sin sliders, swipes ni doble clic. Pensado para celular: el botón
+// principal a lo ancho y los dos de volumen lado a lado, para que todo quepa
+// en pantalla sin bajar.
 
 import { useCallback } from "react";
 import type { DirectorView } from "@/lib/director/viewModel";
 import { Icon, type AnyIconName } from "./Icon";
 
-type Volume = {
+export type VolumeProps = {
   visible: boolean;
   step: number;
   steps: number;
@@ -18,24 +20,39 @@ type Volume = {
 type Props = {
   primary: DirectorView["primary"];
   onPrimary: () => void;
-  volume: Volume;
+  volume: VolumeProps;
 };
 
 export function Controls({ primary, onPrimary, volume }: Props) {
   return (
-    <div className="flex flex-col items-center gap-4 short:gap-2">
-      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
-        <BigButton
-          icon={primary.icon}
-          label={primary.label}
-          onPress={onPrimary}
-          busy={primary.busy}
-          variant="primary"
-          spin={primary.icon === "loading"}
-          autoFocus
-        />
-        {volume.visible && (
-          <>
+    <div className="flex shrink-0 flex-col gap-2">
+      <BigButton
+        icon={primary.icon}
+        label={primary.label}
+        onPress={onPrimary}
+        busy={primary.busy}
+        variant="primary"
+        spin={primary.icon === "loading"}
+        autoFocus
+      />
+      {volume.visible && (
+        <>
+          <p className="flex items-center justify-center gap-3 text-lg font-semibold">
+            <span>Volumen</span>
+            <span aria-hidden="true" className="flex items-end gap-1">
+              {Array.from({ length: volume.steps }, (_, i) => (
+                <span
+                  key={i}
+                  className={`w-2.5 rounded-sm ${i < volume.step ? "bg-foreground" : "bg-band"}`}
+                  style={{ height: `${0.6 + i * 0.25}rem` }}
+                />
+              ))}
+            </span>
+            <span className="tabular-nums">
+              {volume.step} de {volume.steps}
+            </span>
+          </p>
+          <div className="grid grid-cols-2 gap-2">
             <BigButton
               icon="volume-down"
               label="Más suave"
@@ -48,25 +65,8 @@ export function Controls({ primary, onPrimary, volume }: Props) {
               onPress={volume.louder}
               unavailable={!volume.canGoLouder}
             />
-          </>
-        )}
-      </div>
-      {volume.visible && (
-        <p className="flex items-center gap-3 text-xl font-semibold short:text-lg">
-          <span>Volumen</span>
-          <span aria-hidden="true" className="flex items-end gap-1">
-            {Array.from({ length: volume.steps }, (_, i) => (
-              <span
-                key={i}
-                className={`w-2.5 rounded-sm ${i < volume.step ? "bg-foreground" : "bg-band"}`}
-                style={{ height: `${0.75 + i * 0.3}rem` }}
-              />
-            ))}
-          </span>
-          <span className="tabular-nums">
-            {volume.step} de {volume.steps}
-          </span>
-        </p>
+          </div>
+        </>
       )}
     </div>
   );
@@ -113,7 +113,7 @@ function BigButton({
       onClick={inactive ? undefined : onPress}
       aria-disabled={inactive || undefined}
       aria-busy={busy || undefined}
-      className={`inline-flex min-h-16 items-center justify-center gap-3 rounded-2xl border-2 px-6 py-3 text-xl font-bold transition-transform duration-150 ease-strong-out focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-focus aria-disabled:cursor-not-allowed aria-disabled:opacity-60 motion-safe:active:scale-[0.97] motion-safe:aria-disabled:active:scale-100 ${
+      className={`inline-flex min-h-16 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border-2 px-3 py-2 text-xl font-bold max-[23rem]:text-lg transition-transform duration-150 ease-strong-out focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-focus aria-disabled:cursor-not-allowed aria-disabled:opacity-60 motion-safe:active:scale-[0.97] motion-safe:aria-disabled:active:scale-100 ${
         variant === "primary"
           ? "border-foreground bg-foreground text-background"
           : "border-foreground bg-surface text-foreground"

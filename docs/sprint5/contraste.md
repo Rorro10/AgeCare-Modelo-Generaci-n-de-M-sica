@@ -21,24 +21,22 @@ blanco (`#FFFFFF`) encima. Las dos octavas de una nota comparten color.
 | Sol | azul | `#1D4ED8` | **6.70:1** | 6.27:1 |
 | La | morado | `#7E22CE` | **6.98:1** | 6.53:1 |
 
-En modo oscuro el texto sobre estos colores sigue siendo blanco, así que su
-contraste no cambia. El borde del bloque de color contra el fondo oscuro
-`#0C0A09` queda entre 2.83:1 y 3.94:1. No afecta la lectura de la nota: lo
-que se lee es el texto blanco sobre el color.
+La app usa **siempre tema claro**, aunque el sistema esté en modo oscuro: el
+logo AgeCare sin fondo (texto azul oscuro) solo se lee sobre fondo claro.
 
 El color nunca es la única señal: la nota siempre lleva su nombre escrito y
 la franja activa además lleva la flecha `◀`.
 
 ## Resto de la interfaz
 
-| Elemento | Texto | Fondo | Claro | Oscuro |
-| --- | --- | --- | --- | --- |
-| Texto general | `#1C1917` / `#FAFAF9` | `#FAF7F2` / `#0C0A09` | 16.37:1 | 18.92:1 |
-| Tarjeta de aviso, botón secundario | `#1C1917` / `#FAFAF9` | `#FFFFFF` / `#1C1917` | 17.49:1 | 16.74:1 |
-| Franja inactiva | `#292524` / `#F5F5F4` | `#E7E5E4` / `#292524` | 12.08:1 | 13.90:1 |
-| Botón principal | `#FAF7F2` / `#0C0A09` | `#1C1917` / `#FAFAF9` | 16.37:1 | 18.92:1 |
-| Aviso sobre la cámara | `#FFFFFF` | `#1C1917` (stone-900) | 17.49:1 | 17.49:1 |
-| Anillo de foco (no es texto, mín. 3:1) | `#0369A1` / `#7DD3FC` | `#FAF7F2` / `#0C0A09` | 5.55:1 | 11.85:1 |
+| Elemento | Texto | Fondo | Contraste |
+| --- | --- | --- | --- |
+| Texto general | `#1C1917` | `#FAF7F2` | 16.37:1 |
+| Tarjeta de aviso, botón secundario | `#1C1917` | `#FFFFFF` | 17.49:1 |
+| Franja inactiva | `#292524` | `#E7E5E4` | 12.08:1 |
+| Botón principal | `#FAF7F2` | `#1C1917` | 16.37:1 |
+| Aviso sobre la cámara | `#FFFFFF` | `#1C1917` (stone-900) | 17.49:1 |
+| Anillo de foco (no es texto, mín. 3:1) | `#0369A1` | `#FAF7F2` | 5.55:1 |
 
 Los botones que no están disponibles en ese momento (volumen en el tope,
 "Preparando…") se muestran al 60 % de opacidad. WCAG exime a los controles

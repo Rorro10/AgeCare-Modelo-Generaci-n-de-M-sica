@@ -31,6 +31,7 @@ export async function createAudioEngine(): Promise<AudioEngine> {
     },
     dispose() {
       synth.dispose();
+      volume.dispose();
     },
   };
 }

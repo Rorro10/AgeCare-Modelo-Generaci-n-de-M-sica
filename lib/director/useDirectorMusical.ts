@@ -66,13 +66,15 @@ export function useDirectorMusical() {
     setVolumeStep(volume.step);
   }
 
-  function renderLoop() {
+  // Procesa un cuadro. Devuelve false si falta algo para seguir (p. ej. la
+  // vista se desmontó), y el bucle se detiene.
+  function processFrame() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const handTracker = handTrackerRef.current;
     const audio = audioRef.current;
     const stabilizer = stabilizerRef.current;
-    if (!video || !canvas || !handTracker || !stabilizer) return;
+    if (!video || !canvas || !handTracker || !stabilizer) return false;
 
     const ctx = canvas.getContext("2d");
     if (video.readyState >= 2 && ctx) {
@@ -119,7 +121,22 @@ export function useDirectorMusical() {
         hands.length > 1 ? distance(hands[0][WRIST], hands[1][WRIST]) : null;
       if (volume.updateHand(wristDistance)) applyVolume();
     }
+    return true;
+  }
 
+  // Un error dentro de requestAnimationFrame no llega a ningún catch: el
+  // bucle moría en silencio y la pantalla quedaba fija en "Muestra tu mano"
+  // sin sonar. Ahora un error de un cuadro detiene todo y lo muestra.
+  function renderLoop() {
+    try {
+      if (!processFrame()) return;
+    } catch (err) {
+      console.error(err);
+      stopLoop();
+      stopCameraStream(videoRef.current);
+      setStatus("error");
+      return;
+    }
     rafRef.current = requestAnimationFrame(renderLoop);
   }
 
@@ -193,10 +210,15 @@ export function useDirectorMusical() {
     videoEl?.addEventListener("resize", updateAspect);
     return () => {
       videoEl?.removeEventListener("resize", updateAspect);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      stopLoop();
       stopCameraStream(videoEl);
+      // Además de cerrarlos, se olvidan: start() reutiliza lo que ya existe,
+      // y un sintetizador ya destruido no suena (pasaba tras un Fast Refresh
+      // en desarrollo, que ejecuta esta limpieza sin desmontar la vista).
       handTrackerRef.current?.close();
+      handTrackerRef.current = null;
       audioRef.current?.dispose();
+      audioRef.current = null;
     };
   }, []);
 
