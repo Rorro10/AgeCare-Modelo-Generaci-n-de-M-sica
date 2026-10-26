@@ -59,6 +59,16 @@ export const NOTE_HYSTERESIS_RATIO = 0.25;
 export const MIN_VOLUME_DB = -24;
 export const MAX_VOLUME_DB = 0;
 
+// El volumen va en 5 pasos (1 = más suave, 5 = más fuerte) que comparten los
+// botones "Más fuerte/Más suave" y la segunda mano. Se parte en el medio.
+export const VOLUME_STEPS = 5;
+export const DEFAULT_VOLUME_STEP = 3;
+
+// Margen extra, como fracción del ancho de un paso, que la distancia entre
+// muñecas debe sobrepasar para cambiar de paso. Igual que con las notas: el
+// temblor en el borde entre dos pasos no cambia el volumen.
+export const VOLUME_HYSTERESIS_RATIO = 0.25;
+
 // Distancia entre muñecas con la que se alcanza el volumen máximo. 0.8 es
 // casi el ancho del cuadro: no exige estirar los brazos por completo.
 export const WRIST_DISTANCE_FOR_MAX_VOLUME = 0.8;

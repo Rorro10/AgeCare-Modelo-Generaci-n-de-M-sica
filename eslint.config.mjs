@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // WASM de MediaPipe copiado tal cual (código generado de terceros).
+    "public/mediapipe/**",
   ]),
 ]);
 

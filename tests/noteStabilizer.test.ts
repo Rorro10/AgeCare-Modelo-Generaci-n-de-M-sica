@@ -85,6 +85,21 @@ describe("NoteStabilizer: mano perdida", () => {
     expect(back.shouldTrigger).toBe(true);
   });
 
+  it("al volver la mano, la nota responde de inmediato a la nueva altura", () => {
+    const stabilizer = new NoteStabilizer();
+    let t = 0;
+    // Mano quieta abajo, en la franja de la nota 1 (alturas 0.1–0.2).
+    for (let i = 0; i < 10; i++) {
+      stabilizer.update({ height: 0.15, pinchDistance: OPEN }, (t += FRAME_MS));
+    }
+    stabilizer.update(null, (t += FRAME_MS));
+
+    // Vuelve arriba, en la nota 8. Sin olvidar la altura suavizada, la media
+    // móvil daría 0.35·0.85 + 0.65·0.15 ≈ 0.40 → nota 3 en este cuadro.
+    const back = stabilizer.update({ height: 0.85, pinchDistance: OPEN }, (t += FRAME_MS));
+    expect(back.noteIndex).toBe(8);
+  });
+
   it("sin perder la mano, mantener la pinza no vuelve a disparar", () => {
     const stabilizer = new NoteStabilizer();
     stabilizer.update({ height: 0.5, pinchDistance: CLOSED }, 0);

@@ -12,4 +12,14 @@ export async function startCameraStream(video: HTMLVideoElement) {
 export function stopCameraStream(video: HTMLVideoElement | null) {
   const stream = video?.srcObject as MediaStream | null | undefined;
   stream?.getTracks().forEach((t) => t.stop());
+  if (video) video.srcObject = null;
+}
+
+// getUserMedia rechaza con NotAllowedError cuando la persona (o la política
+// del navegador) niega la cámara, y con SecurityError fuera de HTTPS.
+export function isCameraPermissionError(err: unknown) {
+  return (
+    err instanceof DOMException &&
+    (err.name === "NotAllowedError" || err.name === "SecurityError")
+  );
 }
