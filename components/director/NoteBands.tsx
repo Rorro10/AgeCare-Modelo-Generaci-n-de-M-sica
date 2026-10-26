@@ -20,7 +20,7 @@ export function NoteBands({ activeBand, bandsRef }: Props) {
     <ul
       ref={bandsRef}
       aria-label="Altura de tu mano"
-      className="flex h-full w-[4.75rem] flex-col gap-0.5 sm:w-28"
+      className="flex w-[4.75rem] shrink-0 flex-col gap-0.5 sm:w-28"
     >
       {TOP_TO_BOTTOM.map((index) => {
         const active = index === activeBand;

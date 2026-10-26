@@ -12,11 +12,13 @@ type Props = {
 
 export function CameraView({ videoRef, canvasRef, notice }: Props) {
   return (
-    // min-h asegura que cada una de las 10 franjas de al lado tenga altura
-    // para su texto. Si el ancho no alcanza para 4:3, object-cover recorta
-    // los costados, nunca arriba/abajo: la altura de la mano sigue calzando
-    // con las franjas.
-    <div className="relative aspect-[4/3] min-h-80 w-full overflow-hidden rounded-3xl bg-stone-900">
+    // El alto manda: mínimo 17.5rem, para que cada una de las 10 franjas de
+    // al lado tenga lugar para su texto, y como máximo ~55 % de la ventana,
+    // para que la nota y la cámara quepan juntas en pantalla. El ancho sale
+    // del 4:3, pero puede angostarse (min-w-0) si no cabe: object-cover
+    // recorta los costados, nunca arriba/abajo, así la altura de la mano
+    // sigue calzando con las franjas.
+    <div className="relative aspect-[4/3] h-[clamp(17.5rem,55vh,36rem)] min-w-0 overflow-hidden rounded-3xl bg-stone-900">
       <video
         ref={videoRef}
         aria-label="Imagen de tu cámara"

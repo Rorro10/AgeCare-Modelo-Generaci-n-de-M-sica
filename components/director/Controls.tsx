@@ -1,6 +1,7 @@
 // Botones grandes (≥ 64 px de alto, ícono + texto, un solo toque) y nivel de
 // volumen. Sin sliders, swipes ni doble clic.
 
+import { useCallback } from "react";
 import type { DirectorView } from "@/lib/director/viewModel";
 import { Icon, type AnyIconName } from "./Icon";
 
@@ -58,7 +59,7 @@ export function Controls({ primary, onPrimary, volume }: Props) {
               <span
                 key={i}
                 className={`w-2.5 rounded-sm ${i < volume.step ? "bg-foreground" : "bg-band"}`}
-                style={{ height: `${0.5 + i * 0.3}rem` }}
+                style={{ height: `${0.75 + i * 0.3}rem` }}
               />
             ))}
           </span>
@@ -96,13 +97,22 @@ function BigButton({
   autoFocus = false,
 }: BigButtonProps) {
   const inactive = busy || unavailable;
+  // Foco inicial sin hacer scroll: el atributo autoFocus desplazaría la
+  // página hasta el botón y, en pantallas bajas, dejaría la nota fuera de
+  // la vista al cargar.
+  const focusOnMount = useCallback(
+    (el: HTMLButtonElement | null) => {
+      if (el && autoFocus) el.focus({ preventScroll: true });
+    },
+    [autoFocus]
+  );
   return (
     <button
+      ref={focusOnMount}
       type="button"
       onClick={inactive ? undefined : onPress}
       aria-disabled={inactive || undefined}
       aria-busy={busy || undefined}
-      autoFocus={autoFocus}
       className={`inline-flex min-h-16 items-center justify-center gap-3 rounded-2xl border-2 px-6 py-3 text-xl font-bold transition-transform duration-150 ease-strong-out focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-focus aria-disabled:cursor-not-allowed aria-disabled:opacity-60 motion-safe:active:scale-[0.97] motion-safe:aria-disabled:active:scale-100 ${
         variant === "primary"
           ? "border-foreground bg-foreground text-background"

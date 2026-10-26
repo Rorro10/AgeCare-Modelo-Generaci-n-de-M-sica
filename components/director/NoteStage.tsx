@@ -20,7 +20,7 @@ export function NoteStage({ stage, cardRef }: Props) {
     <section
       ref={cardRef}
       aria-label="Nota actual"
-      className={`relative flex min-h-36 items-center justify-center overflow-hidden rounded-3xl px-4 py-4 text-center sm:min-h-44 ${
+      className={`relative flex min-h-40 items-center justify-center overflow-hidden rounded-3xl px-4 py-4 text-center sm:min-h-44 ${
         isNote ? "" : "border-2 border-band bg-surface"
       }`}
       style={

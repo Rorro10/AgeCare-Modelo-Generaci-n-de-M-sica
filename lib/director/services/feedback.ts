@@ -7,8 +7,9 @@
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 // 180 ms: dentro de 150–200 ms, perceptible pero sin quedarse pegado.
 export const PULSE_MS = 180;
-// Escala máxima del pulso. Sutil: se toca muchas veces por minuto.
-const PULSE_SCALE = 1.04;
+// Escala máxima del pulso. Sutil: se toca muchas veces por minuto y la
+// tarjeta es enorme (en 58 rem de ancho, 3 % ya son ~28 px de crecimiento).
+const PULSE_SCALE = 1.03;
 const FLASH_OPACITY = 0.35;
 
 function prefersReducedMotion() {

@@ -32,7 +32,7 @@ export default function DirectorMusical() {
 
       <NoteStage stage={view.stage} cardRef={noteCardRef} />
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+      <div className="flex justify-center gap-3">
         <CameraView videoRef={videoRef} canvasRef={canvasRef} notice={view.cameraNotice} />
         <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
       </div>
