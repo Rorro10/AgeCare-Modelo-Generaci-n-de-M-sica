@@ -17,6 +17,10 @@ import {
   stopCameraStream,
 } from "./services/camera";
 import { pulseNote } from "./services/feedback";
+import {
+  disablePlaybackAudioSession,
+  enablePlaybackAudioSession,
+} from "./services/iosAudio";
 import { createHandTracker, type HandTracker } from "./services/handTracker";
 import { drawHands } from "./services/landmarkRenderer";
 import { describeView, type DirectorStatus } from "./viewModel";
@@ -143,6 +147,9 @@ export function useDirectorMusical() {
   // Sirve para empezar, para seguir después de una pausa y para reintentar
   // tras un error: solo crea lo que todavía no existe.
   async function start() {
+    // Antes de cualquier await, todavía dentro del toque: en iPhone, que el
+    // interruptor de silencio no calle la música.
+    enablePlaybackAudioSession();
     const isResume = status === "paused";
     setResuming(isResume);
     setStatus("loading");
@@ -187,6 +194,7 @@ export function useDirectorMusical() {
     stopLoop();
     stopCameraStream(videoRef.current);
     stabilizerRef.current?.update(null, performance.now());
+    disablePlaybackAudioSession();
     setStatus("paused");
   }
 
@@ -219,6 +227,7 @@ export function useDirectorMusical() {
       handTrackerRef.current = null;
       audioRef.current?.dispose();
       audioRef.current = null;
+      disablePlaybackAudioSession();
     };
   }, []);
 
