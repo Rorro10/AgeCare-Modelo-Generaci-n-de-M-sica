@@ -1,0 +1,3 @@
+# Archivos de terceros copiados tal cual (MediaPipe): sin conversión de fin
+# de línea, para que sigan calzando byte a byte con los SHA-256 del README.
+public/mediapipe/** -text
