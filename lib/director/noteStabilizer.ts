@@ -61,8 +61,11 @@ export class NoteStabilizer {
   update(input: StabilizerInput | null, now: number): StabilizerOutput {
     if (!input) {
       // Mano perdida: que no quede "pinzando". Si no, al volver la mano con
-      // los dedos juntos esa pinza no sonaría.
+      // los dedos juntos esa pinza no sonaría. También se olvida la altura
+      // suavizada: al volver, la nota responde de inmediato a la nueva altura
+      // en vez de "arrastrarse" desde donde estaba la mano antes.
       this.pinching = false;
+      this.smoothedHeight = null;
       return { noteIndex: this.noteIndex, isPinching: false, shouldTrigger: false };
     }
 
