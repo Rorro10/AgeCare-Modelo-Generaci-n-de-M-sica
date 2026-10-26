@@ -25,9 +25,9 @@ export function shouldShowHandGuide(
   now: number,
   delayMs: number = HAND_GUIDE_DELAY_MS
 ): boolean {
-  // TODO(Paz): implementar la regla.
-  void lastHandSeenAt;
-  void now;
-  void delayMs;
-  throw new Error("shouldShowHandGuide: pendiente de implementar");
+  if (lastHandSeenAt === null) return true;
+  // "Más de" y no "igual o más": el requisito es "sin mano por MÁS de 3 s".
+  // Con >= la guía aparecería justo al cumplirse 3 s, un cuadro antes de lo
+  // pedido; los 3 s completos son tolerancia para que la persona vuelva.
+  return now - lastHandSeenAt > delayMs;
 }
