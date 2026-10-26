@@ -90,6 +90,15 @@ describe("describeView: mensaje sin repetir", () => {
   });
 });
 
+describe("describeView: selector de instrumento", () => {
+  it("solo aparece con la cámara apagada: inicio y pausa", () => {
+    const shown = (["idle", "loading", "running", "paused", "denied", "error"] as const).filter(
+      (status) => view({ status, noteIndex: 1 }).showInstruments
+    );
+    expect(shown).toEqual(["idle", "paused"]);
+  });
+});
+
 describe("describeView: volumen y cámara", () => {
   it("el volumen se ve solo cuando hay audio listo", () => {
     expect(view({ status: "idle" }).showVolume).toBe(false);

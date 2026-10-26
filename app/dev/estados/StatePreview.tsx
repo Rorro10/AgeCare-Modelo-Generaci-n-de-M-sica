@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { DirectorScreen } from "@/components/director/DirectorScreen";
 import { VOLUME_STEPS } from "@/lib/director/domain";
+import { INSTRUMENTS } from "@/lib/director/instruments";
 import { pulseNote } from "@/lib/director/services/feedback";
 import { describeView, type DirectorState } from "@/lib/director/viewModel";
 
@@ -71,6 +72,12 @@ export function StatePreview({ estado, showSelector }: { estado: string; showSel
           canGoSofter: step > 1,
           louder: () => {},
           softer: () => {},
+        }}
+        instruments={{
+          visible: view.showInstruments,
+          options: INSTRUMENTS,
+          selected: "guitarra",
+          choose: () => {},
         }}
       />
 

@@ -52,6 +52,10 @@ export type DirectorView = {
   cameraNotice: CameraNotice | null;
   primary: { label: string; icon: IconName; busy: boolean; action: PrimaryAction };
   showVolume: boolean;
+  // El selector de instrumento va en el recuadro de la cámara, solo cuando
+  // la cámara está apagada (inicio y pausa): ahí sobra espacio y mientras se
+  // toca no se puede cambiar por accidente.
+  showInstruments: boolean;
 };
 
 export const MESSAGES = {
@@ -78,10 +82,13 @@ export function describeView(state: DirectorState): DirectorView {
   const repeated =
     (view.stage.kind === "info" && view.stage.title === view.message) ||
     view.cameraNotice?.title === view.message;
-  return { ...view, messageVisible: !repeated };
+  const showInstruments = state.status === "idle" || state.status === "paused";
+  return { ...view, messageVisible: !repeated, showInstruments };
 }
 
-function describeStatus(state: DirectorState): Omit<DirectorView, "messageVisible"> {
+function describeStatus(
+  state: DirectorState
+): Omit<DirectorView, "messageVisible" | "showInstruments"> {
   const { status, resuming, noteIndex, showHandGuide } = state;
 
   switch (status) {

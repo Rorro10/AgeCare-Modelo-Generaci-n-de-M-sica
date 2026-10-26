@@ -19,9 +19,19 @@ type Props = {
   videoAspect: number;
   // Las franjas de notas.
   children: ReactNode;
+  // Contenido que reemplaza al aviso mientras la cámara está apagada (el
+  // selector de instrumento en inicio y pausa).
+  overlay?: ReactNode;
 };
 
-export function CameraView({ videoRef, canvasRef, notice, videoAspect, children }: Props) {
+export function CameraView({
+  videoRef,
+  canvasRef,
+  notice,
+  videoAspect,
+  children,
+  overlay,
+}: Props) {
   return (
     // min-h-44: alto mínimo para que cada una de las 10 franjas tenga
     // espacio para su nombre. Es un container query de tamaño para que el
@@ -53,7 +63,11 @@ export function CameraView({ videoRef, canvasRef, notice, videoAspect, children 
         <div className="absolute inset-y-0 right-0 w-[var(--bands-w)]">{children}</div>
       </div>
 
-      {notice && (
+      {overlay ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-stone-900 p-4">
+          {overlay}
+        </div>
+      ) : notice && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-y-auto bg-stone-900 p-5 text-center text-white">
           <p className="max-w-[28rem] text-xl font-semibold">{notice.title}</p>
           {notice.steps && (
