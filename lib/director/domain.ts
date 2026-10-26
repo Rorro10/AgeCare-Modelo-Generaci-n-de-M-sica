@@ -33,13 +33,26 @@ export const WRIST = 0;
 export const THUMB_TIP = 4;
 export const INDEX_TIP = 8;
 
-// Distancia (normalizada 0-1) entre pulgar e índice bajo la cual se considera
-// "pinza". Se puede ajustar según pruebas de usabilidad.
-export const PINCH_THRESHOLD = 0.06;
+// Histéresis de pinza (distancias normalizadas 0-1 entre pulgar e índice).
+// Se entra en pinza bajo 0.06 y solo se sale sobre 0.08: con un único umbral,
+// el temblor alrededor de 0.06 abriría y cerraría la pinza muchas veces,
+// disparando notas repetidas. Ajustables según pruebas de usabilidad.
+export const PINCH_ENTER_THRESHOLD = 0.06;
+export const PINCH_EXIT_THRESHOLD = 0.08;
 
 // Tiempo mínimo entre dos notas: evita que un mismo gesto dispare varias
 // notas seguidas si la detección parpadea.
 export const MIN_NOTE_INTERVAL_MS = 120;
+
+// Peso del cuadro nuevo en la media móvil exponencial de la altura del índice.
+// 0.35 filtra el temblor (oscilaciones rápidas y pequeñas) sin que la nota se
+// sienta atrasada al mover la mano a propósito (~3 cuadros para alcanzarla).
+export const HEIGHT_SMOOTHING_ALPHA = 0.35;
+
+// Margen extra, como fracción del alto de una franja de nota, que la altura
+// suavizada debe sobrepasar el límite para cambiar de nota. Con 0.25 una mano
+// temblando justo en el borde entre dos notas no salta entre ellas.
+export const NOTE_HYSTERESIS_RATIO = 0.25;
 
 // Rango de volumen controlado por la segunda mano. -24 dB sigue siendo
 // audible con las manos juntas; 0 dB es el máximo sin saturar.

@@ -1,25 +1,18 @@
 "use client";
 
 // Hook que orquesta cámara → detección de manos → mapeo de gestos → audio.
-// La lógica de decisión vive en módulos puros (gestureMapper); aquí solo se
-// conectan los servicios con efectos y el estado que muestra la vista.
+// La lógica de decisión vive en módulos puros (gestureMapper, noteStabilizer);
+// aquí solo se conectan los servicios con efectos y el estado de la vista.
 
 import { useEffect, useRef, useState } from "react";
-import {
-  INDEX_TIP,
-  MIN_NOTE_INTERVAL_MS,
-  PENTATONIC_SCALE,
-  PINCH_THRESHOLD,
-  THUMB_TIP,
-  WRIST,
-} from "./domain";
+import { INDEX_TIP, PENTATONIC_SCALE, THUMB_TIP, WRIST } from "./domain";
 import {
   distance,
-  heightToNoteIndex,
   pinchDistance,
   wristDistanceToDb,
   yToHeight,
 } from "./gestureMapper";
+import { NoteStabilizer } from "./noteStabilizer";
 import { createAudioEngine, type AudioEngine } from "./services/audioEngine";
 import { startCameraStream, stopCameraStream } from "./services/camera";
 import { createHandTracker, type HandTracker } from "./services/handTracker";
@@ -37,8 +30,7 @@ export function useDirectorMusical() {
   const handTrackerRef = useRef<HandTracker | null>(null);
   const audioRef = useRef<AudioEngine | null>(null);
   const rafRef = useRef<number | null>(null);
-  const wasPinchingRef = useRef<boolean>(false);
-  const lastNoteTimeRef = useRef<number>(0);
+  const stabilizerRef = useRef<NoteStabilizer | null>(null);
 
   const [status, setStatus] = useState<DirectorStatus>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -59,7 +51,8 @@ export function useDirectorMusical() {
     const canvas = canvasRef.current;
     const handTracker = handTrackerRef.current;
     const audio = audioRef.current;
-    if (!video || !canvas || !handTracker) return;
+    const stabilizer = stabilizerRef.current;
+    if (!video || !canvas || !handTracker || !stabilizer) return;
 
     const ctx = canvas.getContext("2d");
     if (video.readyState >= 2 && ctx) {
@@ -77,24 +70,21 @@ export function useDirectorMusical() {
 
       if (hands.length > 0) {
         // Mano principal: controla la nota (altura del índice) y el gesto
-        // de pinza (pulgar + índice) dispara la nota, como un "pluck".
+        // de pinza (pulgar + índice) dispara la nota, como un "pluck". El
+        // estabilizador filtra el temblor antes de decidir ambas cosas.
         const primary = hands[0];
-        const noteIndex = heightToNoteIndex(yToHeight(primary[INDEX_TIP].y));
-        const note = PENTATONIC_SCALE[noteIndex];
-        setCurrentNote(note);
-
-        const isPinching =
-          pinchDistance(primary[THUMB_TIP], primary[INDEX_TIP]) <
-          PINCH_THRESHOLD;
-        if (
-          isPinching &&
-          !wasPinchingRef.current &&
-          now - lastNoteTimeRef.current > MIN_NOTE_INTERVAL_MS
-        ) {
-          audio?.playNote(note);
-          lastNoteTimeRef.current = now;
+        const { noteIndex, isPinching, shouldTrigger } = stabilizer.update(
+          {
+            height: yToHeight(primary[INDEX_TIP].y),
+            pinchDistance: pinchDistance(primary[THUMB_TIP], primary[INDEX_TIP]),
+          },
+          now
+        );
+        if (noteIndex !== null) {
+          const note = PENTATONIC_SCALE[noteIndex];
+          setCurrentNote(note);
+          if (shouldTrigger) audio?.playNote(note);
         }
-        wasPinchingRef.current = isPinching;
 
         // Segunda mano (opcional): la distancia entre ambas muñecas
         // controla el volumen/intensidad, como pide la especificación
@@ -106,7 +96,7 @@ export function useDirectorMusical() {
 
         drawHands(ctx, hands, isPinching);
       } else {
-        wasPinchingRef.current = false;
+        stabilizer.update(null, now);
       }
     }
 
@@ -123,6 +113,8 @@ export function useDirectorMusical() {
         // 2) Inicializar Tone.js (requiere gesto del usuario, por eso está
         // dentro del click del botón "Iniciar").
         audioRef.current = await createAudioEngine();
+        // Estado anti-temblor limpio en cada inicio.
+        stabilizerRef.current = new NoteStabilizer();
       }
 
       // 3) Pedir la cámara (esto siempre corre, con o sin detección).
