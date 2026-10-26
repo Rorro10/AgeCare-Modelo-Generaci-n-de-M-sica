@@ -1,24 +1,43 @@
 @import "tailwindcss";
 
+/* Tokens de la vista del adulto mayor. Contrastes documentados en
+   docs/sprint5/contraste.md (todos ≥ 4.5:1). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf7f2;
+  --foreground: #1c1917;
+  --surface: #ffffff;
+  --band: #e7e5e4;
+  --band-foreground: #292524;
+  --focus: #0369a1;
+  /* Ease-out fuerte para respuesta inmediata (emil-design-eng). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-band: var(--band);
+  --color-band-foreground: var(--band-foreground);
+  --color-focus: var(--focus);
+  --ease-strong-out: var(--ease-out);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0c0a09;
+    --foreground: #fafaf9;
+    --surface: #1c1917;
+    --band: #292524;
+    --band-foreground: #f5f5f4;
+    --focus: #7dd3fc;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Fuente del sistema: ya trae ajustes de legibilidad por tamaño. */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
 }
