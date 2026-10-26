@@ -44,6 +44,10 @@ export type CameraNotice = {
 
 export type DirectorView = {
   message: string;
+  // false cuando el mensaje repite lo que ya dice la tarjeta grande o el
+  // aviso de la cámara: no se muestra dos veces en pantalla, pero se sigue
+  // anunciando al lector de pantalla.
+  messageVisible: boolean;
   stage: Stage;
   cameraNotice: CameraNotice | null;
   primary: { label: string; icon: IconName; busy: boolean; action: PrimaryAction };
@@ -70,6 +74,14 @@ const DENIED_STEPS = [
 const RETRY = { label: "Intentar de nuevo", icon: "retry", busy: false, action: "start" } as const;
 
 export function describeView(state: DirectorState): DirectorView {
+  const view = describeStatus(state);
+  const repeated =
+    (view.stage.kind === "info" && view.stage.title === view.message) ||
+    view.cameraNotice?.title === view.message;
+  return { ...view, messageVisible: !repeated };
+}
+
+function describeStatus(state: DirectorState): Omit<DirectorView, "messageVisible"> {
   const { status, resuming, noteIndex, showHandGuide } = state;
 
   switch (status) {

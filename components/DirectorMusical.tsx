@@ -2,54 +2,12 @@
 
 // Vista del adulto mayor del Director Musical. Toda la lógica (cámara,
 // detección, mapeo de gestos, audio y qué mostrar en cada estado) vive en el
-// hook useDirectorMusical y en lib/director/; estos componentes solo dibujan
-// el estado que reciben.
+// hook useDirectorMusical y en lib/director/; DirectorScreen solo dibuja el
+// estado que recibe.
 import { useDirectorMusical } from "@/lib/director/useDirectorMusical";
-import { CameraView } from "./director/CameraView";
-import { Controls } from "./director/Controls";
-import { NoteBands } from "./director/NoteBands";
-import { NoteStage } from "./director/NoteStage";
+import { DirectorScreen } from "./director/DirectorScreen";
 
 export default function DirectorMusical() {
-  const {
-    videoRef,
-    canvasRef,
-    noteCardRef,
-    bandsRef,
-    videoAspect,
-    view,
-    activeBand,
-    onPrimary,
-    volume,
-  } = useDirectorMusical();
-
-  return (
-    // En pantallas bajas (short) todo lo que no es la cámara suma ≤ 23rem:
-    // la caja de la cámara toma el resto del alto (ver CameraView).
-    <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 short:gap-3 short:py-3 sm:gap-6 sm:short:gap-3">
-      <header className="flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/agecare-logo.jpg" alt="AgeCare" className="h-12 w-auto object-contain short:h-8" />
-        <h1 className="text-2xl font-bold short:text-xl">Director Musical</h1>
-      </header>
-
-      <NoteStage stage={view.stage} cardRef={noteCardRef} />
-
-      <CameraView
-        videoRef={videoRef}
-        canvasRef={canvasRef}
-        notice={view.cameraNotice}
-        videoAspect={videoAspect}
-      >
-        <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
-      </CameraView>
-
-      {/* Única región aria-live: mensajes de estado, nunca cada nota. */}
-      <p role="status" aria-live="polite" className="text-center text-xl font-medium short:text-lg">
-        {view.message}
-      </p>
-
-      <Controls primary={view.primary} onPrimary={onPrimary} volume={volume} />
-    </main>
-  );
+  const director = useDirectorMusical();
+  return <DirectorScreen {...director} />;
 }

@@ -18,6 +18,45 @@ tocar** la persona en cada estado, antes de programar la Actividad 51.
   línea de mensaje y la fila de botones no cambian de sitio entre estados;
   solo cambia su contenido. Así nada "salta" de lugar.
 
+## Revisión tras la primera prueba (celular primero)
+
+Al probarla, la pantalla no cabía (había que bajar para el volumen), la
+cámara se veía chica y el mensaje "Muestra tu mano" aparecía dos veces. Se
+ajustó así, y prima sobre los esquemas de abajo donde difieran:
+
+- **Pensada para celular vertical.** La pantalla ocupa exactamente el alto de
+  la ventana: logo AgeCare (sin fondo) centrado con el título, nota compacta,
+  cámara con sus franjas tomando todo el espacio libre, mensaje, "Pausar" a lo
+  ancho, nivel de volumen y "Más suave" / "Más fuerte" lado a lado. Todo se ve
+  sin bajar (verificado en 360×640, 390×664, 412×780 y 1366×650).
+- **La imagen de la cámara se ve completa**, con bandas negras si sobra
+  espacio; las franjas miden lo mismo que la imagen visible.
+- **El mensaje no se repite**: si dice lo mismo que la tarjeta grande o el
+  aviso de la cámara, solo lo oye el lector de pantalla.
+- **Siempre tema claro**, para que el logo se lea.
+
+```
+┌──────────────────────────┐
+│   [logo] Director Musical│
+│ ┌──────────────────────┐ │
+│ │      Sol agudo       │ │  ← nota compacta
+│ └──────────────────────┘ │
+│ ┌──────────────────┐┌──┐ │
+│ │                  ││La│ │
+│ │     CÁMARA       ││..│ │  ← todo el alto libre
+│ │                  ││Do│ │
+│ └──────────────────┘└──┘ │
+│  Sube o baja la mano…    │
+│ ┌──────────────────────┐ │
+│ │      ⏸  Pausar       │ │
+│ └──────────────────────┘ │
+│    Volumen ▮▮▮▯▯ 3 de 5  │
+│ ┌──────────┐┌──────────┐ │
+│ │🔉 M. suave││🔊 M. fuerte│ │
+│ └──────────┘└──────────┘ │
+└──────────────────────────┘
+```
+
 ## Esqueleto común (pantalla ancha)
 
 Todo centrado en una columna de ~60 rem de ancho máximo.

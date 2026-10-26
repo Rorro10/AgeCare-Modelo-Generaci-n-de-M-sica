@@ -30,7 +30,7 @@ export function NoteBands({ activeBand, bandsRef }: Props) {
             key={index}
             data-band={index}
             aria-current={active ? "true" : undefined}
-            className={`relative flex min-h-0 flex-1 overflow-hidden items-center gap-1 rounded-md border-l-[0.375rem] px-1.5 text-base leading-none font-semibold max-[22.5rem]:text-sm sm:px-2 sm:text-lg ${
+            className={`relative flex min-h-0 flex-1 overflow-hidden items-center gap-1 rounded-md border-l-[0.375rem] px-1.5 text-base leading-none font-semibold max-[22.5rem]:text-sm sm:px-2 ${
               active ? "" : "bg-band text-band-foreground"
             }`}
             style={

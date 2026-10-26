@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 /* Tokens de la vista del adulto mayor. Contrastes documentados en
-   docs/sprint5/contraste.md (todos ≥ 4.5:1). */
+   docs/sprint5/contraste.md (todos ≥ 4.5:1). Siempre tema claro, aunque el
+   sistema esté en modo oscuro: el logo AgeCare (texto azul oscuro, sin
+   fondo) solo se lee sobre fondo claro, y un solo tema simplifica el
+   contraste. color-scheme hace que los controles nativos también sean
+   claros. */
 :root {
+  color-scheme: light;
   --background: #faf7f2;
   --foreground: #1c1917;
   --surface: #ffffff;
@@ -13,10 +18,6 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Pantallas bajas (p. ej. portátil de 1366×650 útiles): se compacta la vista
-   para que la nota, la cámara y el botón Pausar quepan sin scroll. */
-@custom-variant short (@media (max-height: 720px));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -25,17 +26,6 @@
   --color-band-foreground: var(--band-foreground);
   --color-focus: var(--focus);
   --ease-strong-out: var(--ease-out);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c0a09;
-    --foreground: #fafaf9;
-    --surface: #1c1917;
-    --band: #292524;
-    --band-foreground: #f5f5f4;
-    --focus: #7dd3fc;
-  }
 }
 
 body {

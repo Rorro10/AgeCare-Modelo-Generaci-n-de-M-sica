@@ -1,16 +1,14 @@
 "use client";
 
 // Fixtures de la vista: cada estado de los wireframes más los peores casos
-// realistas (la etiqueta más larga "Do agudo", el aviso con más texto, el
-// volumen en sus topes). Entran por la misma frontera que la pantalla real:
-// describeView + las props de los componentes. Solo para desarrollo.
+// realistas (la etiqueta más larga "Sol agudo", el aviso con más texto, el
+// volumen en sus topes, la cámara vertical). Entran por la misma frontera que
+// la pantalla real: describeView + las props de DirectorScreen. Solo para
+// desarrollo.
 
 import Link from "next/link";
 import { useRef } from "react";
-import { CameraView } from "@/components/director/CameraView";
-import { Controls } from "@/components/director/Controls";
-import { NoteBands } from "@/components/director/NoteBands";
-import { NoteStage } from "@/components/director/NoteStage";
+import { DirectorScreen } from "@/components/director/DirectorScreen";
 import { VOLUME_STEPS } from "@/lib/director/domain";
 import { pulseNote } from "@/lib/director/services/feedback";
 import { describeView, type DirectorState } from "@/lib/director/viewModel";
@@ -53,60 +51,45 @@ export function StatePreview({ estado, showSelector }: { estado: string; showSel
 
   return (
     <>
-      {/* Mismas clases que components/DirectorMusical.tsx. Sin padding extra
-          abajo: el selector de estados queda encima, como en uso real. */}
-      <main className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 px-4 py-6 short:gap-3 short:py-3 sm:gap-6 sm:short:gap-3">
-        <header className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/agecare-logo.jpg" alt="AgeCare" className="h-12 w-auto object-contain short:h-8" />
-          <h1 className="text-2xl font-bold short:text-xl">Director Musical</h1>
-        </header>
-        <NoteStage stage={view.stage} cardRef={noteCardRef} />
-        <CameraView
-          videoRef={videoRef}
-          canvasRef={canvasRef}
-          notice={view.cameraNotice}
-          videoAspect={fixture.videoAspect ?? 4 / 3}
-        >
-          <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
-        </CameraView>
-        <p role="status" aria-live="polite" className="text-center text-xl font-medium short:text-lg">
-          {view.message}
-        </p>
-        <Controls
-          primary={view.primary}
-          onPrimary={() => {
-            // En la vista de prueba, el botón principal simula una pinza.
-            if (activeBand !== null) pulseNote(noteCardRef.current, bandsRef.current, activeBand);
-          }}
-          volume={{
-            visible: view.showVolume,
-            step,
-            steps: VOLUME_STEPS,
-            canGoLouder: step < VOLUME_STEPS,
-            canGoSofter: step > 1,
-            louder: () => {},
-            softer: () => {},
-          }}
-        />
-      </main>
+      <DirectorScreen
+        videoRef={videoRef}
+        canvasRef={canvasRef}
+        noteCardRef={noteCardRef}
+        bandsRef={bandsRef}
+        videoAspect={fixture.videoAspect ?? 4 / 3}
+        view={view}
+        activeBand={activeBand}
+        // En la vista de prueba, el botón principal simula una pinza.
+        onPrimary={() => {
+          if (activeBand !== null) pulseNote(noteCardRef.current, bandsRef.current, activeBand);
+        }}
+        volume={{
+          visible: view.showVolume,
+          step,
+          steps: VOLUME_STEPS,
+          canGoLouder: step < VOLUME_STEPS,
+          canGoSofter: step > 1,
+          louder: () => {},
+          softer: () => {},
+        }}
+      />
 
       {/* Selector de estado: herramienta de desarrollo, no es parte del diseño. */}
       {showSelector && (
-      <nav
-        aria-label="Estados de prueba"
-        className="fixed inset-x-0 bottom-3 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap justify-center gap-1 rounded-xl bg-neutral-200 p-1 font-sans text-xs text-neutral-900"
-      >
-        {Object.keys(FIXTURES).map((key) => (
-          <Link
-            key={key}
-            href={`?estado=${key}`}
-            className={`rounded-lg px-2 py-1 ${key === estado ? "bg-white shadow-sm" : ""}`}
-          >
-            {key}
-          </Link>
-        ))}
-      </nav>
+        <nav
+          aria-label="Estados de prueba"
+          className="fixed inset-x-0 top-1 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap justify-center gap-1 rounded-xl bg-neutral-200/95 p-1 font-sans text-xs text-neutral-900"
+        >
+          {Object.keys(FIXTURES).map((key) => (
+            <Link
+              key={key}
+              href={`?estado=${key}`}
+              className={`rounded-lg px-2 py-1 ${key === estado ? "bg-white shadow-sm" : ""}`}
+            >
+              {key}
+            </Link>
+          ))}
+        </nav>
       )}
     </>
   );

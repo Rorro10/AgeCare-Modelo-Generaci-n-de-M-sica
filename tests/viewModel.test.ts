@@ -67,6 +67,29 @@ describe("describeView: mensajes de estado", () => {
   });
 });
 
+describe("describeView: mensaje sin repetir", () => {
+  it("con la guía activa, el mensaje no se repite bajo la tarjeta", () => {
+    const v = view({ status: "running", noteIndex: null, showHandGuide: true });
+    expect(v.message).toBe(MESSAGES.showHand);
+    expect(v.messageVisible).toBe(false);
+  });
+
+  it("cargando, el mensaje no repite el aviso de la cámara", () => {
+    expect(view({ status: "loading" }).messageVisible).toBe(false);
+    expect(view({ status: "loading", resuming: true }).messageVisible).toBe(false);
+  });
+
+  it("tocando, el mensaje de cómo tocar sí se ve", () => {
+    expect(view({ status: "running", noteIndex: 3 }).messageVisible).toBe(true);
+  });
+
+  it("en inicio, pausa, permiso denegado y error el mensaje se ve", () => {
+    for (const status of ["idle", "paused", "denied", "error"] as const) {
+      expect([status, view({ status }).messageVisible]).toEqual([status, true]);
+    }
+  });
+});
+
 describe("describeView: volumen y cámara", () => {
   it("el volumen se ve solo cuando hay audio listo", () => {
     expect(view({ status: "idle" }).showVolume).toBe(false);
