@@ -5,10 +5,11 @@
 // volumeControl, viewModel); aquí solo se conectan los servicios con efectos
 // y se entrega a la vista el estado ya listo para dibujar.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { INDEX_TIP, PENTATONIC_SCALE, THUMB_TIP, VOLUME_STEPS, WRIST } from "./domain";
 import { distance, pinchDistance, yToHeight } from "./gestureMapper";
 import { shouldShowHandGuide } from "./handPresence";
+import { DEFAULT_INSTRUMENT, INSTRUMENTS, type InstrumentId } from "./instruments";
 import { NoteStabilizer } from "./noteStabilizer";
 import { createAudioEngine, type AudioEngine } from "./services/audioEngine";
 import {
@@ -23,6 +24,11 @@ import {
 } from "./services/iosAudio";
 import { createHandTracker, type HandTracker } from "./services/handTracker";
 import { drawHands } from "./services/landmarkRenderer";
+import {
+  loadInstrument,
+  saveInstrument,
+  subscribeToPreferences,
+} from "./services/preferences";
 import { describeView, type DirectorStatus } from "./viewModel";
 import { VolumeControl, volumeStepToDb } from "./volumeControl";
 
@@ -42,6 +48,9 @@ export function useDirectorMusical() {
   const lastHandSeenAtRef = useRef<number | null>(null);
   const handTrackerRef = useRef<HandTracker | null>(null);
   const audioRef = useRef<AudioEngine | null>(null);
+  // Creación del audio en curso: la comparten Empezar y la nota de muestra
+  // al elegir instrumento, para no crear dos motores si se tocan seguido.
+  const audioPendingRef = useRef<Promise<AudioEngine> | null>(null);
   const rafRef = useRef<number | null>(null);
   const stabilizerRef = useRef<NoteStabilizer | null>(null);
   // Instancia estable durante toda la vida del componente.
@@ -56,6 +65,16 @@ export function useDirectorMusical() {
   // vertical el navegador suele entregarlo girado (3:4); la vista la usa para
   // mostrar la imagen completa y alinear las franjas con ella.
   const [videoAspect, setVideoAspect] = useState(4 / 3);
+  // Instrumento: el elegido en esta visita, si no el guardado de la anterior,
+  // si no el por defecto. El guardado se lee con useSyncExternalStore: en el
+  // servidor (sin localStorage) da null, así el HTML inicial coincide.
+  const savedInstrument = useSyncExternalStore(
+    subscribeToPreferences,
+    loadInstrument,
+    () => null
+  );
+  const [chosenInstrument, setChosenInstrument] = useState<InstrumentId | null>(null);
+  const instrumentId = chosenInstrument ?? savedInstrument ?? DEFAULT_INSTRUMENT;
 
   // Se usan funciones normales (no useCallback) porque no necesitamos
   // identidad estable entre renders: solo leen/escriben refs y estado.
@@ -63,6 +82,37 @@ export function useDirectorMusical() {
   function stopLoop() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+  }
+
+  // Crea el audio si todavía no existe. Debe llamarse dentro de un toque.
+  function ensureAudio(): Promise<AudioEngine> {
+    if (audioRef.current) return Promise.resolve(audioRef.current);
+    audioPendingRef.current ??= createAudioEngine(instrumentId)
+      .then((engine) => {
+        engine.setVolume(volumeStepToDb(volume.step));
+        audioRef.current = engine;
+        return engine;
+      })
+      .finally(() => {
+        audioPendingRef.current = null;
+      });
+    return audioPendingRef.current;
+  }
+
+  // Elegir instrumento: se recuerda para la próxima vez y suena una nota de
+  // muestra, para escucharlo antes de empezar.
+  async function chooseInstrument(id: InstrumentId) {
+    enablePlaybackAudioSession();
+    setChosenInstrument(id);
+    saveInstrument(id);
+    try {
+      const audio = await ensureAudio();
+      audio.setInstrument(id);
+      audio.playNote("C5");
+    } catch (err) {
+      // Sin la muestra se puede elegir igual; el error se verá al empezar.
+      console.error(err);
+    }
   }
 
   function applyVolume() {
@@ -158,10 +208,8 @@ export function useDirectorMusical() {
         // 1) Audio primero: Tone.js necesita arrancar dentro del gesto del
         // usuario (el toque en "Empezar"), antes de esperas largas como la
         // carga del modelo.
-        if (!audioRef.current) {
-          audioRef.current = await createAudioEngine();
-          audioRef.current.setVolume(volumeStepToDb(volume.step));
-        }
+        const audio = await ensureAudio();
+        audio.setInstrument(instrumentId);
         // 2) Cargar MediaPipe Hands (solo la primera vez).
         if (!handTrackerRef.current) {
           handTrackerRef.current = await createHandTracker();
@@ -227,6 +275,7 @@ export function useDirectorMusical() {
       handTrackerRef.current = null;
       audioRef.current?.dispose();
       audioRef.current = null;
+      audioPendingRef.current = null;
       disablePlaybackAudioSession();
     };
   }, []);
@@ -258,6 +307,12 @@ export function useDirectorMusical() {
       canGoSofter: volumeStep > 1,
       louder,
       softer,
+    },
+    instruments: {
+      visible: view.showInstruments,
+      options: INSTRUMENTS,
+      selected: instrumentId,
+      choose: chooseInstrument,
     },
   };
 }

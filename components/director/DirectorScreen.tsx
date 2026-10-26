@@ -7,6 +7,7 @@ import type { RefObject } from "react";
 import type { DirectorView } from "@/lib/director/viewModel";
 import { CameraView } from "./CameraView";
 import { Controls, type VolumeProps } from "./Controls";
+import { InstrumentPicker, type InstrumentProps } from "./InstrumentPicker";
 import { NoteBands } from "./NoteBands";
 import { NoteStage } from "./NoteStage";
 
@@ -20,6 +21,7 @@ export type DirectorScreenProps = {
   activeBand: number | null;
   onPrimary: () => void;
   volume: VolumeProps;
+  instruments: InstrumentProps;
 };
 
 export function DirectorScreen({
@@ -32,6 +34,7 @@ export function DirectorScreen({
   activeBand,
   onPrimary,
   volume,
+  instruments,
 }: DirectorScreenProps) {
   return (
     // min-h: bajo ~34rem de alto (celular apaisado, zoom grande) la página
@@ -50,6 +53,7 @@ export function DirectorScreen({
         canvasRef={canvasRef}
         notice={view.cameraNotice}
         videoAspect={videoAspect}
+        overlay={instruments.visible ? <InstrumentPicker {...instruments} /> : undefined}
       >
         <NoteBands activeBand={activeBand} bandsRef={bandsRef} />
       </CameraView>
