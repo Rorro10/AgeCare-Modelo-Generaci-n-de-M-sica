@@ -10,7 +10,7 @@ El adulto mayor crea música moviendo la mano frente a la cámara: la altura de 
 - **MediaPipe Hands** (`@mediapipe/tasks-vision`) — reconocimiento de manos on-device (WASM), sin servidor.
 - **Tone.js** — síntesis de audio (Web Audio API) para tocar las notas.
 
-Este es un **prototipo funcional del Hito 2** (reconocimiento gestual básico), pensado como punto de partida para el equipo. No están implementados todavía: el motor de mapeo avanzado (Hito 3), la interfaz accesible final (Hito 4), ni la sincronización con el backend de AgeCare.
+Estado: captura, motor de mapeo (Hito 3), interfaz accesible (Hito 4) y, desde el Sprint 7, **métricas de uso, panel de pruebas piloto e integración con AgeCare por iframe**. No hay backend propio: las sesiones se guardan en el dispositivo y, si el módulo está embebido en AgeCare, se le informan por `postMessage`.
 
 ## Correr en local
 
@@ -63,6 +63,13 @@ MediaPipe ya no descarga nada de CDNs externos: el WASM y el modelo se sirven de
      node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.* \
      public/mediapipe/wasm/
   ```
+
+## Pruebas piloto y métricas (Sprint 7)
+
+- **Enlace por participante**: `/?participante=P01` — la sesión queda asociada a ese código (nunca nombres ni RUT).
+- **Panel del facilitador**: `/piloto` — arma los enlaces, muestra duración, notas, tiempo con la mano a la vista, etc. y descarga **CSV** (para Excel) o JSON. Los datos quedan solo en el dispositivo donde se tocó: hay que exportar al terminar cada jornada.
+- **Integración con AgeCare**: embeber en un iframe con `allow="camera; autoplay"` y configurar `NEXT_PUBLIC_AGECARE_ORIGIN` (variable de entorno en Vercel) con el origen de AgeCare para que reciba las sesiones por `postMessage`. Sin la variable no se envía nada.
+- Documentos: `docs/sprint7/` — planning, protocolo de pruebas piloto, definición de métricas, integración con AgeCare y plantilla de análisis.
 
 ## Notas para el equipo
 
