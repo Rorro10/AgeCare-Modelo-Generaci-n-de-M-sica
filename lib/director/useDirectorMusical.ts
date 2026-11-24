@@ -5,7 +5,7 @@
 // volumeControl, viewModel); aquí solo se conectan los servicios con efectos
 // y se entrega a la vista el estado ya listo para dibujar.
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 import { INDEX_TIP, PENTATONIC_SCALE, THUMB_TIP, VOLUME_STEPS, WRIST } from "./domain";
 import { distance, pinchDistance, yToHeight } from "./gestureMapper";
 import { shouldShowHandGuide } from "./handPresence";
@@ -29,8 +29,15 @@ import {
   saveInstrument,
   subscribeToPreferences,
 } from "./services/preferences";
+import { notifyAgeCare } from "./services/agecareBridge";
+import { newSessionId, saveSession } from "./services/sessionStore";
+import { parseParticipant, SessionRecorder, type VolumeSource } from "./sessionMetrics";
 import { describeView, type DirectorStatus } from "./viewModel";
 import { VolumeControl, volumeStepToDb } from "./volumeControl";
+
+// Cada cuánto se guarda la sesión mientras se toca (además de al pausar y
+// al salir), para no perder sus métricas si se corta sin aviso.
+const SESSION_SAVE_INTERVAL_MS = 15_000;
 
 // Cambia a true para reactivar la detección de manos y el audio.
 // En false: solo se muestra la cámara, sin procesar gestos.
@@ -53,6 +60,10 @@ export function useDirectorMusical() {
   const audioPendingRef = useRef<Promise<AudioEngine> | null>(null);
   const rafRef = useRef<number | null>(null);
   const stabilizerRef = useRef<NoteStabilizer | null>(null);
+  // Métricas de uso de la sesión actual (Sprint 7); null hasta el primer
+  // «Empezar». Ver sessionMetrics.ts.
+  const sessionRef = useRef<SessionRecorder | null>(null);
+  const sessionSavedAtRef = useRef(0);
   // Instancia estable durante toda la vida del componente.
   const [volume] = useState(() => new VolumeControl());
 
@@ -78,6 +89,32 @@ export function useDirectorMusical() {
 
   // Se usan funciones normales (no useCallback) porque no necesitamos
   // identidad estable entre renders: solo leen/escriben refs y estado.
+
+  // Guarda la sesión en el dispositivo y, si está dentro de AgeCare, se la
+  // informa. Las métricas nunca deben romper la música: cualquier error se
+  // registra y se sigue.
+  function saveSessionNow() {
+    const session = sessionRef.current;
+    if (!session) return;
+    try {
+      const now = Date.now();
+      const summary = session.summary(now);
+      sessionSavedAtRef.current = now;
+      saveSession(summary);
+      notifyAgeCare(summary);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // Al cerrar o abandonar la página termina la sesión; si vuelve a tocar
+  // «Empezar» se abre una nueva.
+  function endSession() {
+    if (!sessionRef.current) return;
+    sessionRef.current.end(Date.now());
+    saveSessionNow();
+    sessionRef.current = null;
+  }
 
   function stopLoop() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -105,6 +142,7 @@ export function useDirectorMusical() {
     enablePlaybackAudioSession();
     setChosenInstrument(id);
     saveInstrument(id);
+    sessionRef.current?.changeInstrument(Date.now(), id);
     try {
       const audio = await ensureAudio();
       audio.setInstrument(id);
@@ -115,9 +153,10 @@ export function useDirectorMusical() {
     }
   }
 
-  function applyVolume() {
+  function applyVolume(source: VolumeSource) {
     audioRef.current?.setVolume(volumeStepToDb(volume.step));
     setVolumeStep(volume.step);
+    sessionRef.current?.changeVolume(Date.now(), volume.step, source);
   }
 
   // Procesa un cuadro. Devuelve false si falta algo para seguir (p. ej. la
@@ -142,6 +181,9 @@ export function useDirectorMusical() {
       const now = performance.now();
       const hands = handTracker.detect(video, now);
       if (hands.length > 0) lastHandSeenAtRef.current = now;
+      // Las métricas usan la hora del reloj (Date.now) para poder fecharlas.
+      const wallNow = Date.now();
+      sessionRef.current?.frame(wallNow, hands.length > 0);
       setShowHandGuide(shouldShowHandGuide(lastHandSeenAtRef.current, now));
 
       if (hands.length > 0) {
@@ -160,6 +202,7 @@ export function useDirectorMusical() {
           setNoteIndex(noteIndex);
           if (shouldTrigger) {
             audio?.playNote(PENTATONIC_SCALE[noteIndex]);
+            sessionRef.current?.note(wallNow, noteIndex);
             pulseNote(noteCardRef.current, bandsRef.current, noteIndex);
           }
         }
@@ -173,7 +216,9 @@ export function useDirectorMusical() {
       // otro paso, para no pisar al botón por temblor (ver volumeControl).
       const wristDistance =
         hands.length > 1 ? distance(hands[0][WRIST], hands[1][WRIST]) : null;
-      if (volume.updateHand(wristDistance)) applyVolume();
+      if (volume.updateHand(wristDistance)) applyVolume("mano");
+
+      if (wallNow - sessionSavedAtRef.current >= SESSION_SAVE_INTERVAL_MS) saveSessionNow();
     }
     return true;
   }
@@ -188,6 +233,8 @@ export function useDirectorMusical() {
       console.error(err);
       stopLoop();
       stopCameraStream(videoRef.current);
+      sessionRef.current?.fail(Date.now(), "error");
+      saveSessionNow();
       setStatus("error");
       return;
     }
@@ -201,6 +248,18 @@ export function useDirectorMusical() {
     // interruptor de silencio no calle la música.
     enablePlaybackAudioSession();
     const isResume = status === "paused";
+    // La sesión parte con el primer «Empezar». El código de participante
+    // viene en la dirección (?participante=P01), puesto por el facilitador
+    // del piloto o por AgeCare.
+    sessionRef.current ??= new SessionRecorder({
+      id: newSessionId(),
+      participant: parseParticipant(
+        new URLSearchParams(window.location.search).get("participante")
+      ),
+      instrument: instrumentId,
+      volumeStep: volume.step,
+      at: Date.now(),
+    });
     setResuming(isResume);
     setStatus("loading");
     try {
@@ -226,13 +285,18 @@ export function useDirectorMusical() {
       lastHandSeenAtRef.current = null;
       setShowHandGuide(true);
       setStatus("running");
+      sessionRef.current?.running(Date.now());
+      saveSessionNow();
       if (HABILITAR_DETECCION_MANOS) {
         renderLoop();
       }
     } catch (err) {
       console.error(err);
       stopCameraStream(videoRef.current);
-      setStatus(isCameraPermissionError(err) ? "denied" : "error");
+      const denied = isCameraPermissionError(err);
+      sessionRef.current?.fail(Date.now(), denied ? "denied" : "error");
+      saveSessionNow();
+      setStatus(denied ? "denied" : "error");
     }
   }
 
@@ -243,15 +307,21 @@ export function useDirectorMusical() {
     stopCameraStream(videoRef.current);
     stabilizerRef.current?.update(null, performance.now());
     disablePlaybackAudioSession();
+    sessionRef.current?.pause(Date.now());
+    saveSessionNow();
     setStatus("paused");
   }
 
+  // Para los avisos de la página que se escuchan desde el efecto de abajo.
+  const onPageHidden = useEffectEvent(() => saveSessionNow());
+  const onPageLeft = useEffectEvent(() => endSession());
+
   function louder() {
-    if (volume.louder()) applyVolume();
+    if (volume.louder()) applyVolume("boton");
   }
 
   function softer() {
-    if (volume.softer()) applyVolume();
+    if (volume.softer()) applyVolume("boton");
   }
 
   useEffect(() => {
@@ -264,8 +334,21 @@ export function useDirectorMusical() {
       }
     }
     videoEl?.addEventListener("resize", updateAspect);
+    // Al pasar a otra app o pestaña se guarda cómo va la sesión (en celular
+    // puede que la página no vuelva); al cerrar o salir, la sesión termina.
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") onPageHidden();
+    }
+    function onPageHide() {
+      onPageLeft();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       videoEl?.removeEventListener("resize", updateAspect);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      onPageLeft();
       stopLoop();
       stopCameraStream(videoEl);
       // Además de cerrarlos, se olvidan: start() reutiliza lo que ya existe,
