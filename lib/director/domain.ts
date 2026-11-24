@@ -7,8 +7,11 @@ export type Point = { x: number; y: number; z: number };
 // Una mano son los 21 landmarks de MediaPipe Hands.
 export type Hand = Point[];
 
-// Resultado de procesar un cuadro de video: las manos detectadas en él.
-export type HandFrame = { hands: Hand[]; timestamp: number };
+// Una mano tal como la entrega el detector: los 21 puntos sobre la imagen y,
+// si vienen, los mismos puntos en 3D en metros ("world landmarks"). Por
+// ahora solo se usan los de la imagen: medir la pinza en 3D se probó y daba
+// pinzas con los dedos todavía separados.
+export type DetectedHand = { landmarks: Hand; world: Hand | null };
 
 // Escala pentatónica mayor de C: siempre suena armonioso, sin importar
 // el orden de las notas. Ampliada a dos octavas para tener más rango.
@@ -34,11 +37,19 @@ export const THUMB_TIP = 4;
 export const INDEX_TIP = 8;
 
 // Histéresis de pinza (distancias normalizadas 0-1 entre pulgar e índice).
-// Se entra en pinza bajo 0.06 y solo se sale sobre 0.08: con un único umbral,
-// el temblor alrededor de 0.06 abriría y cerraría la pinza muchas veces,
-// disparando notas repetidas. Ajustables según pruebas de usabilidad.
-export const PINCH_ENTER_THRESHOLD = 0.06;
-export const PINCH_EXIT_THRESHOLD = 0.08;
+// Se entra en pinza bajo 0.04 y solo se sale sobre 0.06: con un único umbral,
+// el temblor alrededor de 0.04 abriría y cerraría la pinza muchas veces,
+// disparando notas repetidas. Bajados de 0.06/0.08 tras probar con cámara:
+// sonaba con los dedos aún separados. Calibrar con /?debug=1.
+export const PINCH_ENTER_THRESHOLD = 0.04;
+export const PINCH_EXIT_THRESHOLD = 0.06;
+
+// Tolerancia a parpadeos del detector: si la mano desaparece menos que esto,
+// se sigue como si nada (no se reinicia la nota ni la pinza). Antes un solo
+// cuadro perdido con los dedos juntos hacía sonar la nota de nuevo al volver.
+// 150 ms ≈ 4-5 cuadros de cámara: mucho menos de lo que tarda sacar la mano
+// del cuadro y volver a propósito.
+export const HAND_LOSS_GRACE_MS = 150;
 
 // Tiempo mínimo entre dos notas: evita que un mismo gesto dispare varias
 // notas seguidas si la detección parpadea.

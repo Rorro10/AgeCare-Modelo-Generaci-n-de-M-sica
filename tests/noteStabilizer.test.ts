@@ -38,13 +38,13 @@ describe("NoteStabilizer: histéresis de nota", () => {
 });
 
 describe("NoteStabilizer: histéresis de pinza", () => {
-  it("una pinza que oscila entre 0.059 y 0.065 dispara una sola vez", () => {
+  it("una pinza que oscila entre 0.039 y 0.045 dispara una sola vez", () => {
     const stabilizer = new NoteStabilizer();
     let triggers = 0;
     // 30 cuadros ≈ 480 ms: más que el intervalo mínimo entre notas, así que
     // solo la histéresis evita disparos repetidos.
     for (let i = 0; i < 30; i++) {
-      const pinchDistance = i % 2 === 0 ? 0.059 : 0.065;
+      const pinchDistance = i % 2 === 0 ? 0.039 : 0.045;
       const out = stabilizer.update({ height: 0.5, pinchDistance }, i * FRAME_MS);
       if (out.shouldTrigger) triggers++;
     }
@@ -92,12 +92,26 @@ describe("NoteStabilizer: mano perdida", () => {
     for (let i = 0; i < 10; i++) {
       stabilizer.update({ height: 0.15, pinchDistance: OPEN }, (t += FRAME_MS));
     }
-    stabilizer.update(null, (t += FRAME_MS));
+    // Sin mano por 320 ms: más que la tolerancia a parpadeos.
+    for (let i = 0; i < 20; i++) stabilizer.update(null, (t += FRAME_MS));
 
     // Vuelve arriba, en la nota 8. Sin olvidar la altura suavizada, la media
     // móvil daría 0.35·0.85 + 0.65·0.15 ≈ 0.40 → nota 3 en este cuadro.
     const back = stabilizer.update({ height: 0.85, pinchDistance: OPEN }, (t += FRAME_MS));
     expect(back.noteIndex).toBe(8);
+  });
+
+  it("un parpadeo corto del detector con la pinza cerrada no la repite", () => {
+    const stabilizer = new NoteStabilizer();
+    let t = 0;
+    const first = stabilizer.update({ height: 0.5, pinchDistance: CLOSED }, t);
+    expect(first.shouldTrigger).toBe(true);
+    // 2 cuadros sin mano (~32 ms) y vuelve con los dedos juntos todavía.
+    stabilizer.update(null, (t += FRAME_MS));
+    stabilizer.update(null, (t += FRAME_MS));
+    const back = stabilizer.update({ height: 0.5, pinchDistance: CLOSED }, (t += FRAME_MS));
+    expect(back.shouldTrigger).toBe(false);
+    expect(back.isPinching).toBe(true);
   });
 
   it("sin perder la mano, mantener la pinza no vuelve a disparar", () => {

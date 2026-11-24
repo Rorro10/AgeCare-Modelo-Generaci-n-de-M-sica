@@ -6,8 +6,18 @@
 // y se entrega a la vista el estado ya listo para dibujar.
 
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
-import { INDEX_TIP, PENTATONIC_SCALE, THUMB_TIP, VOLUME_STEPS, WRIST } from "./domain";
+import {
+  INDEX_TIP,
+  PENTATONIC_SCALE,
+  PINCH_ENTER_THRESHOLD,
+  PINCH_EXIT_THRESHOLD,
+  THUMB_TIP,
+  VOLUME_STEPS,
+  WRIST,
+  type Point,
+} from "./domain";
 import { distance, pinchDistance, yToHeight } from "./gestureMapper";
+import { pickPrimaryHand } from "./handMeasures";
 import { shouldShowHandGuide } from "./handPresence";
 import { DEFAULT_INSTRUMENT, INSTRUMENTS, type InstrumentId } from "./instruments";
 import { NoteStabilizer } from "./noteStabilizer";
@@ -23,7 +33,7 @@ import {
   enablePlaybackAudioSession,
 } from "./services/iosAudio";
 import { createHandTracker, type HandTracker } from "./services/handTracker";
-import { drawHands } from "./services/landmarkRenderer";
+import { drawDebugInfo, drawHands } from "./services/landmarkRenderer";
 import {
   loadInstrument,
   saveInstrument,
@@ -60,6 +70,16 @@ export function useDirectorMusical() {
   const audioPendingRef = useRef<Promise<AudioEngine> | null>(null);
   const rafRef = useRef<number | null>(null);
   const stabilizerRef = useRef<NoteStabilizer | null>(null);
+  // Muñeca de la mano principal en el último cuadro: para seguir a la misma
+  // mano cuando hay dos a la vista.
+  const primaryWristRef = useRef<Point | null>(null);
+  // Tiempo del video del último cuadro procesado: la pantalla suele ir a
+  // 60 Hz y la cámara a ~30, así que la mitad de las vueltas del bucle
+  // repetirían el mismo cuadro. Se saltan, para no gastar batería.
+  const lastVideoTimeRef = useRef(-1);
+  // Modo diagnóstico (/?debug=1): muestra en la imagen los valores con que
+  // se calibran los umbrales. Nunca lo ve el adulto mayor.
+  const debugRef = useRef({ enabled: false, frames: 0, since: 0, fps: 0 });
   // Métricas de uso de la sesión actual (Sprint 7); null hasta el primer
   // «Empezar». Ver sessionMetrics.ts.
   const sessionRef = useRef<SessionRecorder | null>(null);
@@ -170,57 +190,89 @@ export function useDirectorMusical() {
     if (!video || !canvas || !handTracker || !stabilizer) return false;
 
     const ctx = canvas.getContext("2d");
-    if (video.readyState >= 2 && ctx) {
+    if (video.readyState < 2 || !ctx) return true;
+    // Mismo cuadro de cámara que la vuelta anterior: nada nuevo que ver.
+    if (video.currentTime === lastVideoTimeRef.current) return true;
+    lastVideoTimeRef.current = video.currentTime;
+
+    // Cambiar el tamaño del canvas lo borra y reserva memoria de nuevo: solo
+    // cuando cambia el video (al empezar o al girar el celular).
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // renderLoop es un bucle imperativo manejado por requestAnimationFrame
-      // (no se ejecuta durante el render de React), por eso puede leer un
-      // reloj externo con performance.now().
-      const now = performance.now();
-      const hands = handTracker.detect(video, now);
-      if (hands.length > 0) lastHandSeenAtRef.current = now;
-      // Las métricas usan la hora del reloj (Date.now) para poder fecharlas.
-      const wallNow = Date.now();
-      sessionRef.current?.frame(wallNow, hands.length > 0);
-      setShowHandGuide(shouldShowHandGuide(lastHandSeenAtRef.current, now));
-
-      if (hands.length > 0) {
-        // Mano principal: controla la nota (altura del índice) y el gesto
-        // de pinza (pulgar + índice) dispara la nota, como un "pluck". El
-        // estabilizador filtra el temblor antes de decidir ambas cosas.
-        const primary = hands[0];
-        const { noteIndex, isPinching, shouldTrigger } = stabilizer.update(
-          {
-            height: yToHeight(primary[INDEX_TIP].y),
-            pinchDistance: pinchDistance(primary[THUMB_TIP], primary[INDEX_TIP]),
-          },
-          now
-        );
-        if (noteIndex !== null) {
-          setNoteIndex(noteIndex);
-          if (shouldTrigger) {
-            audio?.playNote(PENTATONIC_SCALE[noteIndex]);
-            sessionRef.current?.note(wallNow, noteIndex);
-            pulseNote(noteCardRef.current, bandsRef.current, noteIndex);
-          }
-        }
-        drawHands(ctx, hands, isPinching);
-      } else {
-        stabilizer.update(null, now);
-      }
-
-      // Segunda mano (opcional): la distancia entre ambas muñecas mueve el
-      // volumen por pasos, igual que los botones. Solo actúa al cruzar a
-      // otro paso, para no pisar al botón por temblor (ver volumeControl).
-      const wristDistance =
-        hands.length > 1 ? distance(hands[0][WRIST], hands[1][WRIST]) : null;
-      if (volume.updateHand(wristDistance)) applyVolume("mano");
-
-      if (wallNow - sessionSavedAtRef.current >= SESSION_SAVE_INTERVAL_MS) saveSessionNow();
     }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // renderLoop es un bucle imperativo manejado por requestAnimationFrame
+    // (no se ejecuta durante el render de React), por eso puede leer un
+    // reloj externo con performance.now().
+    const now = performance.now();
+    const hands = handTracker.detect(video, now);
+    if (hands.length > 0) lastHandSeenAtRef.current = now;
+    // Las métricas usan la hora del reloj (Date.now) para poder fecharlas.
+    const wallNow = Date.now();
+    sessionRef.current?.frame(wallNow, hands.length > 0);
+    setShowHandGuide(shouldShowHandGuide(lastHandSeenAtRef.current, now));
+
+    const images = hands.map((hand) => hand.landmarks);
+    let pinch: number | null = null;
+    if (hands.length > 0) {
+      // Mano principal: controla la nota (altura del índice) y el gesto de
+      // pinza (pulgar + índice) dispara la nota, como un "pluck". Se sigue a
+      // la misma mano entre cuadros, y el estabilizador filtra el temblor y
+      // los parpadeos del detector antes de decidir.
+      const primary = hands[pickPrimaryHand(images, primaryWristRef.current)].landmarks;
+      primaryWristRef.current = primary[WRIST];
+      pinch = pinchDistance(primary[THUMB_TIP], primary[INDEX_TIP]);
+      const { noteIndex, isPinching, shouldTrigger } = stabilizer.update(
+        { height: yToHeight(primary[INDEX_TIP].y), pinchDistance: pinch },
+        now
+      );
+      if (noteIndex !== null) {
+        setNoteIndex(noteIndex);
+        if (shouldTrigger) {
+          audio?.playNote(PENTATONIC_SCALE[noteIndex]);
+          sessionRef.current?.note(wallNow, noteIndex);
+          pulseNote(noteCardRef.current, bandsRef.current, noteIndex);
+        }
+      }
+      drawHands(ctx, images, isPinching);
+    } else {
+      stabilizer.update(null, now);
+    }
+
+    // Segunda mano (opcional): la distancia entre ambas muñecas mueve el
+    // volumen por pasos, igual que los botones. Solo actúa al cruzar a
+    // otro paso, para no pisar al botón por temblor (ver volumeControl).
+    const wristDistance =
+      images.length > 1 ? distance(images[0][WRIST], images[1][WRIST]) : null;
+    if (volume.updateHand(wristDistance)) applyVolume("mano");
+
+    if (debugRef.current.enabled) drawDebug(ctx, now, hands.length, pinch);
+
+    if (wallNow - sessionSavedAtRef.current >= SESSION_SAVE_INTERVAL_MS) saveSessionNow();
     return true;
+  }
+
+  function drawDebug(
+    ctx: CanvasRenderingContext2D,
+    now: number,
+    handCount: number,
+    pinch: number | null
+  ) {
+    const debug = debugRef.current;
+    debug.frames += 1;
+    if (now - debug.since >= 1000) {
+      debug.fps = Math.round((debug.frames * 1000) / (now - debug.since));
+      debug.frames = 0;
+      debug.since = now;
+    }
+    drawDebugInfo(ctx, [
+      `${debug.fps} cuadros/s · ${handTrackerRef.current?.delegate ?? "?"}`,
+      `manos: ${handCount}`,
+      `pinza: ${pinch === null ? "—" : pinch.toFixed(3)}`,
+      `umbral: <${PINCH_ENTER_THRESHOLD} toca · >${PINCH_EXIT_THRESHOLD} suelta`,
+    ]);
   }
 
   // Un error dentro de requestAnimationFrame no llega a ningún catch: el
@@ -275,6 +327,10 @@ export function useDirectorMusical() {
         }
         // Estado anti-temblor limpio en cada inicio.
         stabilizerRef.current = new NoteStabilizer();
+        primaryWristRef.current = null;
+        lastVideoTimeRef.current = -1;
+        debugRef.current.enabled =
+          new URLSearchParams(window.location.search).get("debug") === "1";
       }
 
       // 3) Pedir la cámara (esto siempre corre, con o sin detección).

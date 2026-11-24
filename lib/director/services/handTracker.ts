@@ -5,13 +5,15 @@
 // "Modo sin internet"): la app funciona sin conexión una vez cargada la
 // página, y el WASM siempre calza con la versión instalada del paquete.
 
-import type { Hand } from "../domain";
+import type { DetectedHand } from "../domain";
 
 const WASM_BASE_PATH = "/mediapipe/wasm";
 const HAND_MODEL_PATH = "/mediapipe/hand_landmarker.task";
 
 export type HandTracker = {
-  detect(video: HTMLVideoElement, timestamp: number): Hand[];
+  detect(video: HTMLVideoElement, timestamp: number): DetectedHand[];
+  // "GPU" o "CPU": con qué terminó corriendo el modelo (se ve en /?debug=1).
+  delegate: "GPU" | "CPU";
   close(): void;
 };
 
@@ -20,18 +22,35 @@ export async function createHandTracker(): Promise<HandTracker> {
     "@mediapipe/tasks-vision"
   );
   const vision = await FilesetResolver.forVisionTasks(WASM_BASE_PATH);
-  const handLandmarker = await HandLandmarker.createFromOptions(vision, {
-    baseOptions: {
-      modelAssetPath: HAND_MODEL_PATH,
-      delegate: "GPU",
-    },
-    runningMode: "VIDEO",
-    numHands: 2,
-  });
+
+  const create = (delegate: "GPU" | "CPU") =>
+    HandLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: HAND_MODEL_PATH, delegate },
+      runningMode: "VIDEO",
+      numHands: 2,
+    });
+
+  // La GPU es más rápida, pero algunos celulares (WebGL limitado o
+  // bloqueado) no la soportan y antes la app quedaba en «Algo salió mal».
+  // En ese caso se usa la CPU: más lenta, pero funciona.
+  let delegate: "GPU" | "CPU" = "GPU";
+  let handLandmarker;
+  try {
+    handLandmarker = await create("GPU");
+  } catch (err) {
+    console.warn("MediaPipe sin GPU, se usa CPU:", err);
+    delegate = "CPU";
+    handLandmarker = await create("CPU");
+  }
 
   return {
+    delegate,
     detect(video, timestamp) {
-      return handLandmarker.detectForVideo(video, timestamp).landmarks ?? [];
+      const result = handLandmarker.detectForVideo(video, timestamp);
+      return (result.landmarks ?? []).map((landmarks, i) => ({
+        landmarks,
+        world: result.worldLandmarks?.[i] ?? null,
+      }));
     },
     close() {
       handLandmarker.close();
